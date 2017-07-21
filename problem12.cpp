@@ -3,7 +3,6 @@
 #include <vector>
 #include <array>
 #include <cstdlib>
-#include <ctime>
 
 #include "bytevector.h"
 
@@ -52,7 +51,7 @@ int main() {
     int block_offset = i % block_size; 
     int block_index = i / block_size;
 
-    bytevector padding(16 - block_offset - 2, 'q');
+    bytevector padding(16 - block_offset - 1, 'q');
     res = encrypt(padding);
     vector<bytevector> enc_blocks = split_into_blocks(res, block_size);
 

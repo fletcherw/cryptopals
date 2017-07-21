@@ -5,6 +5,11 @@ LFLAGS=-lcrypto
 CPP=$(wildcard problem*.cpp)
 BIN=$(CPP:problem%.cpp=p%.out)
 
+ifdef ASAN
+  FLAGS += -fsanitize=address
+  LFLAGS += -fsanitize=address
+endif
+
 all: $(BIN)
 
 p%.out : problem%.cpp
@@ -12,4 +17,4 @@ p%.out : problem%.cpp
 	@ $(CC) $(FLAGS) bytevector.cpp $< $(LFLAGS) -o $@
 
 clean :
-	rm $(BIN) 
+	rm -f $(BIN) 

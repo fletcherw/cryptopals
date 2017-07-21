@@ -4,6 +4,7 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <random>
 #include <stdexcept>
 #include <cstdio>
 
@@ -272,9 +273,13 @@ void handleErrors(void) {
 }
 
 array<byte, 16> random_key(void) {
+  std::random_device rd;
+  std::mt19937 gen(rd()); 
+  std::uniform_int_distribution<> dis(32, 126);
+
   array<byte, 16> key;
   for (int i = 0; i < 16; i++) {
-    key[i] = random() % 95 + 32;
+    key[i] = dis(gen); 
   }
   return key;
 }
