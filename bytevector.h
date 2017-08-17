@@ -1,10 +1,12 @@
-#include <iostream>
-#include <vector>
-#include <string>
 #include <array>
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 typedef unsigned char byte;
 typedef std::vector<byte> bytevector;
+typedef std::unordered_map<std::string, std::string> cookie;
 
 std::ostream& operator<<(std::ostream& os, bytevector b);
 
@@ -29,6 +31,7 @@ bytevector solve_single_char_xor(bytevector input);
 std::vector<bytevector> split_into_blocks(bytevector input, int blocksize);
 
 bytevector pad_bytevector(bytevector bv, unsigned int length);
+bytevector pad_to_block(bytevector bv, unsigned int blocksize);
 bytevector strip_padding(bytevector bv);
 
 void crypto_init(void);
@@ -41,3 +44,5 @@ bytevector encrypt_ecb(bytevector plaintext, byte *key, bool pad);
 bytevector decrypt_ecb(bytevector ciphertext, byte *key, bool pad);
 bytevector encrypt_cbc(bytevector plaintext, byte *key, byte *iv);
 bytevector decrypt_cbc(bytevector ciphertext, byte *key, byte *iv);
+
+cookie parse_cookie(std::string cookie_str, char separator);

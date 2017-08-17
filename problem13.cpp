@@ -2,7 +2,6 @@
 #include <string>
 #include <vector>
 #include <array>
-#include <cstdlib>
 #include <unordered_map>
 
 #include "bytevector.h"
@@ -14,28 +13,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 
-typedef unordered_map<string, string> cookie;
-
 array<byte, 16> key = random_key();
-
-cookie parse_cookie(string cookie_str) {
-  vector<string> kv_pairs;
-  size_t last_idx = 0;
-  size_t idx = cookie_str.find('&');
-  while (idx != string::npos) {
-    kv_pairs.push_back(cookie_str.substr(last_idx, idx - last_idx));
-    last_idx = idx + 1;
-    idx = cookie_str.find('&', last_idx);
-  }
-  kv_pairs.push_back(cookie_str.substr(last_idx, idx));
-
-  cookie c;
-  for (const string &s : kv_pairs) {
-    idx = s.find('=');
-    c[s.substr(0, idx)] = s.substr(idx+1);
-  }
-  return c;
-}
 
 string profile_for(string email) {
   string sanitized_email;
@@ -60,7 +38,7 @@ bytevector encrypt(string profile) {
 
 cookie decrypt(bytevector profile) {
   bytevector plaintext = decrypt_ecb(profile, key.data(), true);
-  return parse_cookie(bytevector_to_string(plaintext));
+  return parse_cookie(bytevector_to_string(plaintext), '&');
 }
 
 int main() {

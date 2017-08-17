@@ -265,6 +265,11 @@ bytevector pad_bytevector(bytevector bv, unsigned int length) {
   return output;
 }
 
+bytevector pad_to_block(bytevector bv, unsigned int blocksize) {
+  int size = bv.size();
+  return pad_bytevector(bv, size + (blocksize - (size % blocksize)));
+}
+
 bytevector strip_padding(bytevector bv) {
   unsigned len = bv.size();
   for (unsigned i = 1; i <= 256 && i <= len; i++) {
@@ -414,19 +419,15 @@ bytevector decrypt_ecb(bytevector data, byte *key, bool pad) {
 }
 
 bytevector encrypt_cbc(bytevector plaintext, byte *key, byte *iv) {
-  vector<bytevector> blocks = split_into_blocks(plaintext, 16);
+  bytevector padded = pad_to_block(plaintext, 16);
+  vector<bytevector> blocks = split_into_blocks(padded, 16);
   bytevector ciphertext;
-  bytevector prev_block(iv, iv + 16);;
+  bytevector prev_block(iv, iv + 16);
 
-  for (auto it = blocks.begin(); it < blocks.end(); it++) {
-    bytevector block = *it;
-    if (block.size() < 16) block = pad_bytevector(block, 16);
-    if (block.size() > 16) throw invalid_argument("cbc needs <=16 byte blocks");
+  for (const bytevector &block : blocks) {
     bytevector cipher_block = encrypt_ecb(block ^ prev_block, key, false);
-    for (byte b : cipher_block) {
-      ciphertext.push_back(b);
-    }
-    prev_block = *it;
+    ciphertext += cipher_block;
+    prev_block = cipher_block;
   }
   return ciphertext;
 }
@@ -436,11 +437,30 @@ bytevector decrypt_cbc(bytevector ciphertext, byte *key, byte *iv) {
   bytevector plaintext;
   bytevector prev_block(iv, iv + 16);
 
-  for (auto it = blocks.begin(); it < blocks.end(); it++) {
-    bytevector cipher = *it;
-    bytevector plain_block = decrypt_ecb(cipher, key, false);
-    for (byte c : plain_block ^ prev_block) plaintext.push_back(c);
-    prev_block = *it;
+  for (const bytevector &block : blocks) {
+    bytevector plain_block = decrypt_ecb(block, key, false);
+    plaintext += (plain_block ^ prev_block);
+    prev_block = block;
   }
-  return plaintext;
+  return strip_padding(plaintext);
 }
+
+cookie parse_cookie(string cookie_str, char separator) {
+  vector<string> kv_pairs;
+  size_t last_idx = 0;
+  size_t idx = cookie_str.find(separator);
+  while (idx != string::npos) {
+    kv_pairs.push_back(cookie_str.substr(last_idx, idx - last_idx));
+    last_idx = idx + 1;
+    idx = cookie_str.find(separator, last_idx);
+  }
+  kv_pairs.push_back(cookie_str.substr(last_idx, idx));
+
+  cookie c;
+  for (const string &s : kv_pairs) {
+    idx = s.find('=');
+    c[s.substr(0, idx)] = s.substr(idx+1);
+  }
+  return c;
+}
+
