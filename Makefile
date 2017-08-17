@@ -12,7 +12,7 @@ endif
 
 all: $(BIN)
 
-p%.out : problem%.cpp
+p%.out : problem%.cpp bytevector.h bytevector.cpp 
 	@ echo "Compiling $@"
 	@ $(CC) $(FLAGS) bytevector.cpp $< $(LFLAGS) -o $@
 

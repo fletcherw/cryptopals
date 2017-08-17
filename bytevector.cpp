@@ -17,6 +17,9 @@
 
 using namespace std;
 
+std::random_device rd;
+std::mt19937 gen(rd());
+
 char base64_char_decode(char c) {
   if ('A' <= c && c <= 'Z') {
     return (c - 'A');
@@ -38,7 +41,7 @@ char base64_char_decode(char c) {
 bytevector base64_to_bytevector(string file) {
   std::ifstream input(file);
   bytevector output;
-  char a, b, c, d; 
+  char a, b, c, d;
   while (input >> a >> b >> c >> d) {
     char i1 = base64_char_decode(a);
     char i2 = base64_char_decode(b);
@@ -53,7 +56,7 @@ bytevector base64_to_bytevector(string file) {
     output.push_back(b2);
     output.push_back(b3);
   }
-  return output; 
+  return output;
 }
 
 
@@ -99,7 +102,7 @@ string bytevector_to_string(bytevector bytes) {
   return out.str();
 }
 
-static const char charset[] = 
+static const char charset[] =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 string bytevector_to_base64(bytevector bytes) {
@@ -129,7 +132,7 @@ ostream& operator<<(ostream& os, bytevector b) {
   auto it = b.begin();
   while (it != b.end()) {
     sprintf(equiv, "%02x", *it);
-    os << equiv; 
+    os << equiv;
     it++;
   }
   return os;
@@ -154,16 +157,22 @@ bytevector operator^(bytevector a, bytevector b) {
   return output;
 }
 
+bytevector operator+=(bytevector &a, bytevector b) {
+  a.insert(a.end(), b.begin(), b.end());
+  return a;
+}
+
 bytevector operator+(bytevector a, bytevector b) {
-  bytevector result = a;
-  result.insert(result.end(), b.begin(), b.end());
-  return result;
+  return a += b;
+}
+
+bytevector operator+=(bytevector &a, char b) {
+  a.push_back(b);
+  return a;
 }
 
 bytevector operator+(bytevector a, char b) {
-  bytevector result = a;
-  result.push_back(b);
-  return result;
+  return a += b;
 }
 
 array<double, 27> letter_frequencies(bytevector b) {
@@ -176,7 +185,7 @@ array<double, 27> letter_frequencies(bytevector b) {
     } else if ('a' <= c && c <= 'z') {
       counts[c - 'a']++;
     } else {
-      counts[26]++; 
+      counts[26]++;
     }
   }
 
@@ -187,7 +196,7 @@ array<double, 27> letter_frequencies(bytevector b) {
 }
 
 bytevector repeating_key_xor(bytevector text, string key) {
-  bytevector mask;  
+  bytevector mask;
   unsigned count = 0;
   while (count < text.size()) {
     for (byte c : key) {
@@ -256,6 +265,21 @@ bytevector pad_bytevector(bytevector bv, unsigned int length) {
   return output;
 }
 
+bytevector strip_padding(bytevector bv) {
+  unsigned len = bv.size();
+  for (unsigned i = 1; i <= 256 && i <= len; i++) {
+    if (i > 1 && bv[len - i] != bv[len - i + 1]) {
+      throw std::invalid_argument("Bad padding");
+    }
+    if (bv[len - i] == i) {
+      bytevector res = bv;
+      res.resize(len - i);
+      return res;
+    }
+  }
+  throw std::invalid_argument("Bad padding");
+}
+
 void crypto_init(void) {
   ERR_load_crypto_strings();
   OpenSSL_add_all_algorithms();
@@ -273,15 +297,25 @@ void handleErrors(void) {
 }
 
 array<byte, 16> random_key(void) {
-  std::random_device rd;
-  std::mt19937 gen(rd()); 
   std::uniform_int_distribution<> dis(32, 126);
 
   array<byte, 16> key;
   for (int i = 0; i < 16; i++) {
-    key[i] = dis(gen); 
+    key[i] = dis(gen);
   }
   return key;
+}
+
+bytevector random_string(void) {
+  std::uniform_int_distribution<> random_len(0, 256);
+  int len = random_len(gen);
+
+  std::uniform_int_distribution<> dis(32, 126);
+  bytevector s;
+  for (int i = 0; i < len; i++) {
+    s.push_back(dis(gen));
+  }
+  return s;
 }
 
 bytevector encrypt_ecb(bytevector data, byte *key, bool pad) {
@@ -289,7 +323,7 @@ bytevector encrypt_ecb(bytevector data, byte *key, bool pad) {
   byte plaintext[data.size()];
   int i = 0;
   for (byte b : data) {
-    plaintext[i++] = b; 
+    plaintext[i++] = b;
   }
 
   int len;
@@ -336,7 +370,7 @@ bytevector decrypt_ecb(bytevector data, byte *key, bool pad) {
   byte plaintext[data.size()];
   int i = 0;
   for (byte b : data) {
-    ciphertext[i++] = b; 
+    ciphertext[i++] = b;
   }
 
   int len;
@@ -389,12 +423,12 @@ bytevector encrypt_cbc(bytevector plaintext, byte *key, byte *iv) {
     if (block.size() < 16) block = pad_bytevector(block, 16);
     if (block.size() > 16) throw invalid_argument("cbc needs <=16 byte blocks");
     bytevector cipher_block = encrypt_ecb(block ^ prev_block, key, false);
-    for (byte b : cipher_block) { 
+    for (byte b : cipher_block) {
       ciphertext.push_back(b);
     }
     prev_block = *it;
   }
-  return ciphertext; 
+  return ciphertext;
 }
 
 bytevector decrypt_cbc(bytevector ciphertext, byte *key, byte *iv) {
