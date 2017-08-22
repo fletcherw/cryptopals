@@ -15,9 +15,9 @@ array<byte, 16> key = random_key();
 array<byte, 16> iv = random_key();
 
 bytevector encrypt(bytevector userdata) {
-  bytevector prefix = 
+  bytevector prefix =
     string_to_bytevector("comment1=cooking%20MCs;userdata=");
-  bytevector suffix = 
+  bytevector suffix =
     string_to_bytevector(";comment2=%20like%20a%20pound%20of%20bacon");
 
   bytevector sanitized;
@@ -30,22 +30,22 @@ bytevector encrypt(bytevector userdata) {
       sanitized.push_back(c);
     }
   }
-  bytevector ciphertext =
-    encrypt_cbc(prefix + sanitized + suffix, key.data(), iv.data());
+  bytevector plaintext = pad_to_block(prefix + sanitized + suffix, 16);
+  bytevector ciphertext = encrypt_cbc(plaintext, key.data(), iv.data());
   return ciphertext;
 }
 
 int main() {
   crypto_init();
 
-  string input = "QQQQQQQQQQQQQQQQ:admin<true"; 
+  string input = "QQQQQQQQQQQQQQQQ:admin<true";
   bytevector ciphertext = encrypt(string_to_bytevector(input));
-  
+
   ciphertext[32] ^= 1;
   ciphertext[38] ^= 1;
 
-  bytevector plaintext = 
-    decrypt_cbc(ciphertext, key.data(), iv.data());
+  bytevector plaintext =
+    strip_padding(decrypt_cbc(ciphertext, key.data(), iv.data()));
   cookie c = parse_cookie(bytevector_to_string(plaintext), ';');
   for (const auto &member : c) {
     if (member.first == "admin") {

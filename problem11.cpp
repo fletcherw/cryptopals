@@ -25,15 +25,15 @@ bytevector random_encrypt(bytevector data) {
 
   bytevector ct;
   if (random() % 2) {
-    ct = encrypt_ecb(pt, key.data(), true); 
+    ct = encrypt_ecb(pt, key.data(), true);
     cout << "Real:  ECB" << endl;
   } else {
     array<byte, 16> iv = random_key();
-    ct = encrypt_cbc(pt, key.data(), iv.data()); 
+    ct = encrypt_cbc(pt, key.data(), iv.data());
     cout << "Real:  CBC" << endl;
   }
 
-  return ct; 
+  return ct;
 }
 
 int main() {
@@ -44,7 +44,7 @@ int main() {
   vector<bytevector> blocks = split_into_blocks(res, 16);
   if (blocks[1] == blocks[2]) {
     cout << "Guess: ECB" << endl;
-  } else { 
+  } else {
     cout << "Guess: CBC" << endl;
   }
   return 0;

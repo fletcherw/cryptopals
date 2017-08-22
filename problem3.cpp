@@ -17,9 +17,9 @@ int main() {
     bytevector mask(input.size(), c);
     bytevector decrypted = input ^ mask;
     auto frequencies = letter_frequencies(decrypted);
-    double error = squared_error(frequencies); 
+    double error = squared_error(frequencies);
     if (error < best_error || best_error == -1) {
-      best_output = decrypted; 
+      best_output = decrypted;
       best_error = error;
     }
   }

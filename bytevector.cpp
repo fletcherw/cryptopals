@@ -17,8 +17,10 @@
 
 using namespace std;
 
-std::random_device rd;
-std::mt19937 gen(rd());
+namespace {
+  std::random_device rd;
+  std::mt19937 gen(rd());
+}
 
 char base64_char_decode(char c) {
   if ('A' <= c && c <= 'Z') {
@@ -38,7 +40,7 @@ char base64_char_decode(char c) {
   }
 }
 
-bytevector base64_to_bytevector(string file) {
+bytevector base64_file_to_bytevector(string file) {
   std::ifstream input(file);
   bytevector output;
   char a, b, c, d;
@@ -59,6 +61,28 @@ bytevector base64_to_bytevector(string file) {
   return output;
 }
 
+bytevector base64_to_bytevector(string input) {
+  if (input.size() % 4 != 0) {
+    throw invalid_argument(
+        "input to base64_to_bytevector must have length that is multiple of 4");
+  }
+  bytevector output;
+  for (unsigned i = 0; i < input.size(); i += 4) {
+    char i1 = base64_char_decode(input[i]);
+    char i2 = base64_char_decode(input[i+1]);
+    char i3 = base64_char_decode(input[i+2]);
+    char i4 = base64_char_decode(input[i+3]);
+
+    char b1 = (i1 << 2) | ((i2 >> 4) & 0x03);
+    char b2 = (i2 << 4) | ((i3 >> 2) & 0x0F);
+    char b3 = (i3 << 6) | (i4);
+
+    output.push_back(b1);
+    output.push_back(b2);
+    output.push_back(b3);
+  }
+  return output;
+}
 
 byte hex_digit_to_bits(byte c) {
   if ('0' <= c && c <= '9') {
@@ -270,6 +294,19 @@ bytevector pad_to_block(bytevector bv, unsigned int blocksize) {
   return pad_bytevector(bv, size + (blocksize - (size % blocksize)));
 }
 
+bool check_padding(bytevector bv) {
+  unsigned len = bv.size();
+  for (unsigned i = 1; i <= 256 && i <= len; i++) {
+    if (i > 1 && bv[len - i] != bv[len - i + 1]) {
+      return false;
+    }
+    if (bv[len - i] == i) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bytevector strip_padding(bytevector bv) {
   unsigned len = bv.size();
   for (unsigned i = 1; i <= 256 && i <= len; i++) {
@@ -419,8 +456,10 @@ bytevector decrypt_ecb(bytevector data, byte *key, bool pad) {
 }
 
 bytevector encrypt_cbc(bytevector plaintext, byte *key, byte *iv) {
-  bytevector padded = pad_to_block(plaintext, 16);
-  vector<bytevector> blocks = split_into_blocks(padded, 16);
+  if (!check_padding(plaintext)) {
+    throw std::invalid_argument("input to encrypt_cbc must be padded to 16 bytes");
+  }
+  vector<bytevector> blocks = split_into_blocks(plaintext, 16);
   bytevector ciphertext;
   bytevector prev_block(iv, iv + 16);
 
@@ -442,7 +481,7 @@ bytevector decrypt_cbc(bytevector ciphertext, byte *key, byte *iv) {
     plaintext += (plain_block ^ prev_block);
     prev_block = block;
   }
-  return strip_padding(plaintext);
+  return plaintext;
 }
 
 cookie parse_cookie(string cookie_str, char separator) {

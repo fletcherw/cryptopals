@@ -15,7 +15,7 @@ using std::endl;
 array<byte, 16> key = random_key();
 
 bytevector encrypt(bytevector plaintext) {
-  bytevector sec = base64_to_bytevector("problem12.data");
+  bytevector sec = base64_file_to_bytevector("problem12.data");
   bytevector ciphertext = encrypt_ecb(plaintext + sec, key.data(), true);
   return ciphertext;
 }

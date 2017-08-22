@@ -15,7 +15,7 @@ using std::cout;
 using std::endl;
 
 vector<bytevector> transpose(vector<bytevector> input) {
-  vector<bytevector> output(input[0].size()); 
+  vector<bytevector> output(input[0].size());
   for (bytevector bv : input) {
     for (unsigned i = 1; i < bv.size(); i++) {
       output[i].push_back(bv[i]);
@@ -25,7 +25,7 @@ vector<bytevector> transpose(vector<bytevector> input) {
 }
 
 int main() {
-  bytevector data = base64_to_bytevector("problem6.data");
+  bytevector data = base64_file_to_bytevector("problem6.data");
 
   vector<pair<double, int>> keys;
   for (int key_size = 2; key_size < 40; key_size++) {
@@ -40,14 +40,14 @@ int main() {
       it += key_size;
 
       dist += (hamming_distance(a, b) / (double) key_size);
-    } 
+    }
 
     keys.push_back(std::make_pair(dist, key_size));
   }
   std::sort(keys.begin(), keys.end());
 
   vector<bytevector> blocks = split_into_blocks(data, keys[0].second);
-  vector<bytevector> by_index = transpose(blocks); 
+  vector<bytevector> by_index = transpose(blocks);
   std::string key;
   for (bytevector bv : by_index) {
     char best_key;
@@ -56,9 +56,9 @@ int main() {
       bytevector mask(bv.size(), c);
       bytevector decrypted = bv ^ mask;
       auto frequencies = letter_frequencies(decrypted);
-      double error = squared_error(frequencies); 
+      double error = squared_error(frequencies);
       if (error < best_error || best_error == -1) {
-        best_key = c; 
+        best_key = c;
         best_error = error;
       }
     }
@@ -66,6 +66,6 @@ int main() {
   }
 
   bytevector plain = repeating_key_xor(data, key);
-  cout << bytevector_to_string(plain); 
+  cout << bytevector_to_string(plain);
   return 0;
 }

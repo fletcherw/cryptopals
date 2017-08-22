@@ -22,7 +22,7 @@ int main() {
     for (unsigned i = 0; i < line.size(); i += 16) {
       chunks.push_back(line.substr(i, 16));
     }
-    
+
     std::unordered_multiset<string> strings;
     for (string s : chunks) {
       strings.insert(s);

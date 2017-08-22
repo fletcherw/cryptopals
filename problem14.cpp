@@ -16,8 +16,8 @@ array<byte, 16> key = random_key();
 bytevector random_prefix = random_string();
 
 bytevector encrypt(bytevector plaintext) {
-  bytevector sec = base64_to_bytevector("problem12.data");
-  bytevector ciphertext = 
+  bytevector sec = base64_file_to_bytevector("problem12.data");
+  bytevector ciphertext =
     encrypt_ecb(random_prefix + plaintext + sec, key.data(), true);
   return ciphertext;
 }
@@ -41,7 +41,7 @@ int main() {
   bytevector align_padding;
   unsigned prefix_bytes = 0;
   bool found = false;
-  while (!found) { 
+  while (!found) {
     bytevector res = encrypt(align_padding + input);
     vector<bytevector> blocks = split_into_blocks(res, block_size);
     for (unsigned i = 0; i < blocks.size() - 1; i++) {

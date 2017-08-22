@@ -18,7 +18,8 @@ bytevector operator+(bytevector a, char b);
 
 bytevector hex_to_bytevector(std::string s);
 bytevector string_to_bytevector(std::string s);
-bytevector base64_to_bytevector(std::string file);
+bytevector base64_file_to_bytevector(std::string file);
+bytevector base64_to_bytevector(std::string input);
 
 std::string bytevector_to_string(bytevector bytes);
 std::string bytevector_to_base64(bytevector bytes);
@@ -32,6 +33,7 @@ std::vector<bytevector> split_into_blocks(bytevector input, int blocksize);
 
 bytevector pad_bytevector(bytevector bv, unsigned int length);
 bytevector pad_to_block(bytevector bv, unsigned int blocksize);
+bool check_padding(bytevector bv);
 bytevector strip_padding(bytevector bv);
 
 void crypto_init(void);

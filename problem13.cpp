@@ -44,10 +44,10 @@ cookie decrypt(bytevector profile) {
 int main() {
   crypto_init();
   bytevector base = encrypt(profile_for("admin@site.us"));
-  bytevector role = 
+  bytevector role =
     encrypt(profile_for("qqqqqqqqqqadmin\xb\xb\xb\xb\xb\xb\xb\xb\xb\xb\xb"));
 
-  bytevector exploit;  
+  bytevector exploit;
   exploit.insert(exploit.end(), base.begin(), base.begin() + 32);
   exploit.insert(exploit.end(), role.begin() + 16, role.begin() + 32);
 

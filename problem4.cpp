@@ -19,14 +19,14 @@ int main() {
       bytevector mask(input_vector.size(), c);
       bytevector decrypted = input_vector ^ mask;
       auto frequencies = letter_frequencies(decrypted);
-      double error = squared_error(frequencies); 
+      double error = squared_error(frequencies);
       if (error < best_error || best_error == -1) {
-        best_output = decrypted; 
+        best_output = decrypted;
         best_error = error;
       }
     }
   }
-  
+
   std::cout << bytevector_to_string(best_output);
   return 0;
 }
