@@ -20,6 +20,7 @@ bytevector hex_to_bytevector(std::string s);
 bytevector string_to_bytevector(std::string s);
 bytevector base64_file_to_bytevector(std::string file);
 bytevector base64_to_bytevector(std::string input);
+bytevector int_to_bytevector(uint64_t i);
 
 std::string bytevector_to_string(bytevector bytes);
 std::string bytevector_to_base64(bytevector bytes);
@@ -44,7 +45,11 @@ bytevector random_string(void);
 
 bytevector encrypt_ecb(bytevector plaintext, byte *key, bool pad);
 bytevector decrypt_ecb(bytevector ciphertext, byte *key, bool pad);
+
 bytevector encrypt_cbc(bytevector plaintext, byte *key, byte *iv);
 bytevector decrypt_cbc(bytevector ciphertext, byte *key, byte *iv);
+
+bytevector encrypt_ctr(bytevector plaintext, byte *key, uint64_t nonce);
+bytevector decrypt_ctr(bytevector ciphertext, byte *key, uint64_t nonce);
 
 cookie parse_cookie(std::string cookie_str, char separator);

@@ -84,6 +84,16 @@ bytevector base64_to_bytevector(string input) {
   return output;
 }
 
+bytevector int_to_bytevector(uint64_t input)
+{
+  bytevector bv;
+  for (unsigned i = 0; i < 8; i++) {
+    byte b = static_cast<byte>((input >> (8 * i)) & 0xFF);
+    bv.push_back(b);
+  }
+  return bv;
+}
+
 byte hex_digit_to_bits(byte c) {
   if ('0' <= c && c <= '9') {
     return (c - '0');
@@ -155,7 +165,7 @@ ostream& operator<<(ostream& os, bytevector b) {
   equiv[2] = '\0';
   auto it = b.begin();
   while (it != b.end()) {
-    sprintf(equiv, "%02x", *it);
+    sprintf(equiv, "\\x%02x", *it);
     os << equiv;
     it++;
   }
@@ -482,6 +492,33 @@ bytevector decrypt_cbc(bytevector ciphertext, byte *key, byte *iv) {
     prev_block = block;
   }
   return plaintext;
+}
+
+bytevector do_ctr(bytevector input, byte *key, uint64_t nonceInt) {
+  bytevector nonce = int_to_bytevector(nonceInt);
+  uint64_t block_counter = 0;
+  vector<bytevector> blocks = split_into_blocks(input, 16);
+
+  bytevector output;
+  for (const bytevector &block : blocks) {
+    bytevector key_block = nonce + int_to_bytevector(block_counter);
+    bytevector key_stream = 
+      encrypt_ecb(key_block, key, false);
+    key_stream.resize(block.size());
+    output += key_stream ^ block;
+    block_counter++;
+  }
+  return output;
+}
+
+bytevector encrypt_ctr(bytevector plaintext, byte *key, uint64_t nonce)
+{
+  return do_ctr(plaintext, key, nonce);
+}
+
+bytevector decrypt_ctr(bytevector ciphertext, byte *key, uint64_t nonce)
+{
+  return do_ctr(ciphertext, key, nonce);
 }
 
 cookie parse_cookie(string cookie_str, char separator) {
