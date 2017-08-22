@@ -14,16 +14,6 @@ using std::string;
 using std::cout;
 using std::endl;
 
-vector<bytevector> transpose(vector<bytevector> input) {
-  vector<bytevector> output(input[0].size());
-  for (bytevector bv : input) {
-    for (unsigned i = 1; i < bv.size(); i++) {
-      output[i].push_back(bv[i]);
-    }
-  }
-  return output;
-}
-
 int main() {
   bytevector data = base64_file_to_bytevector("problem6.data");
 

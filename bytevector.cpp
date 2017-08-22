@@ -165,8 +165,9 @@ ostream& operator<<(ostream& os, bytevector b) {
   equiv[2] = '\0';
   auto it = b.begin();
   while (it != b.end()) {
-    sprintf(equiv, "\\x%02x", *it);
+    sprintf(equiv, "%02x", *it);
     os << equiv;
+    if (it + 1 != b.end()) os << " ";
     it++;
   }
   return os;
@@ -281,6 +282,16 @@ vector<bytevector> split_into_blocks(bytevector input, int blocksize) {
       it++;
     }
     output.push_back(bv);
+  }
+  return output;
+}
+
+vector<bytevector> transpose(vector<bytevector> input) {
+  vector<bytevector> output(input[0].size());
+  for (bytevector bv : input) {
+    for (unsigned i = 1; i < bv.size(); i++) {
+      output[i].push_back(bv[i]);
+    }
   }
   return output;
 }
@@ -502,7 +513,7 @@ bytevector do_ctr(bytevector input, byte *key, uint64_t nonceInt) {
   bytevector output;
   for (const bytevector &block : blocks) {
     bytevector key_block = nonce + int_to_bytevector(block_counter);
-    bytevector key_stream = 
+    bytevector key_stream =
       encrypt_ecb(key_block, key, false);
     key_stream.resize(block.size());
     output += key_stream ^ block;

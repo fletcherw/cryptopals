@@ -29,8 +29,8 @@ std::array<double, 27> letter_frequencies(bytevector b);
 bytevector repeating_key_xor(bytevector text, std::string key);
 int hamming_distance(bytevector a, bytevector b);
 double squared_error(std::array<double, 27> freq);
-bytevector solve_single_char_xor(bytevector input);
 std::vector<bytevector> split_into_blocks(bytevector input, int blocksize);
+std::vector<bytevector> transpose(std::vector<bytevector> input);
 
 bytevector pad_bytevector(bytevector bv, unsigned int length);
 bytevector pad_to_block(bytevector bv, unsigned int blocksize);
