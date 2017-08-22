@@ -3,7 +3,7 @@ FLAGS=-std=c++11 -g -Wall -Wextra -Werror
 LFLAGS=-lcrypto
 
 CPP=$(wildcard problem*.cpp)
-BIN=$(CPP:problem%.cpp=p%.out)
+BIN=$(CPP:problem%.cpp=p%)
 
 ifdef ASAN
   FLAGS += -fsanitize=address
@@ -12,7 +12,7 @@ endif
 
 all: $(BIN)
 
-p%.out : problem%.cpp bytevector.h bytevector.cpp
+p% : problem%.cpp bytevector.h bytevector.cpp
 	@ echo "Compiling $@"
 	@ $(CC) $(FLAGS) bytevector.cpp $< $(LFLAGS) -o $@
 

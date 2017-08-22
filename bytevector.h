@@ -54,3 +54,19 @@ bytevector encrypt_ctr(bytevector plaintext, byte *key, uint64_t nonce);
 bytevector decrypt_ctr(bytevector ciphertext, byte *key, uint64_t nonce);
 
 cookie parse_cookie(std::string cookie_str, char separator);
+
+uint32_t untemper(uint32_t val);
+
+class MT19937 {
+public:
+  MT19937(uint32_t seed);
+  MT19937(std::array<uint32_t, 624> state);
+  uint32_t next(); 
+
+private:
+  void twist();
+
+  unsigned index;
+  std::array<uint32_t, 624> mt;
+};
+

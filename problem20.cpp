@@ -4,8 +4,6 @@
 #include <string>
 #include <vector>
 #include <array>
-#include <random>
-#include <iomanip>
 
 #include "bytevector.h"
 
