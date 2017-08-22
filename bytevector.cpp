@@ -213,6 +213,7 @@ bytevector operator+(bytevector a, char b) {
 array<double, 27> letter_frequencies(bytevector b) {
   double total = 0;
   array<double, 27> counts;
+  for (int i = 0; i < 27; i++) counts[i] = 0;
   for (byte c : b) {
     total++;
     if ('A' <= c && c <= 'Z') {
@@ -243,6 +244,32 @@ bytevector repeating_key_xor(bytevector text, string key) {
   return text ^ mask;
 }
 
+string solve_repeating_key_xor(bytevector ciphertext, unsigned key_size) {
+  vector<bytevector> blocks = split_into_blocks(ciphertext, key_size);
+  if (blocks.back().size() < key_size) {
+    blocks.resize(blocks.size() - 1);
+  }
+
+  vector<bytevector> by_index = transpose(blocks);
+  std::string key;
+  for (bytevector bv : by_index) {
+    char best_key = 'a';
+    double best_error = -1;
+    for (unsigned c = 0; c < 255; c++) {
+      bytevector mask(bv.size(), c);
+      bytevector decrypted = bv ^ mask;
+      auto frequencies = letter_frequencies(decrypted);
+      double error = squared_error(frequencies);
+      if (error < best_error || best_error == -1) {
+        best_key = c;
+        best_error = error;
+      }
+    }
+    key += best_key;
+  }
+  return key;
+}
+
 int hamming_distance(bytevector a, bytevector b) {
   bytevector diff = a ^ b;
   int count = 0;
@@ -269,13 +296,13 @@ double squared_error(array<double, 27> freq) {
   return error;
 }
 
-vector<bytevector> split_into_blocks(bytevector input, int blocksize) {
+vector<bytevector> split_into_blocks(bytevector input, unsigned blocksize) {
   vector<bytevector> output;
 
   for (unsigned index = 0; index < input.size(); index += blocksize) {
     auto it = input.begin() + index;
     bytevector bv;
-    int count = 0;
+    unsigned count = 0;
     while (count < blocksize && it != input.end()) {
       bv.push_back(*it);
       count++;

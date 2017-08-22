@@ -27,9 +27,10 @@ std::string bytevector_to_base64(bytevector bytes);
 
 std::array<double, 27> letter_frequencies(bytevector b);
 bytevector repeating_key_xor(bytevector text, std::string key);
+std::string solve_repeating_key_xor(bytevector ciphertext, unsigned key_size);
 int hamming_distance(bytevector a, bytevector b);
 double squared_error(std::array<double, 27> freq);
-std::vector<bytevector> split_into_blocks(bytevector input, int blocksize);
+std::vector<bytevector> split_into_blocks(bytevector input, unsigned blocksize);
 std::vector<bytevector> transpose(std::vector<bytevector> input);
 
 bytevector pad_bytevector(bytevector bv, unsigned int length);
