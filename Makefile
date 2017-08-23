@@ -2,15 +2,18 @@ CXX     = g++
 FLAGS   = -std=c++11 -g -Wall -Wextra -Werror
 LFLAGS  = -lssl -lcrypto
 
-BINCPP  = $(wildcard problem*.cpp)
-BIN     = $(BINCPP:problem%.cpp=p%) 
+BINCPP  = $(wildcard src/problem*.cpp)
+BIN     = $(BINCPP:src/problem%.cpp=p%) 
 
-LIBCPP  = bytevector.cpp cookie.cpp MT19937.cpp
-LIBOBJ  = $(LIBCPP:%.cpp=build/%.o) 
+LIBCPP  = src/bytevector.cpp \
+          src/cookie.cpp \
+          src/MT19937.cpp
+
+LIBOBJ  = $(LIBCPP:src/%.cpp=build/%.o) 
 LIBHEAD = $(LIBCPP:%.cpp=%.h) 
 
 CPP     = $(BINCPP) $(LIBCPP)
-OBJ     = $(CPP:%.cpp=build/%.o)
+OBJ     = $(CPP:src/%.cpp=build/%.o)
 
 ifdef ASAN
   FLAGS += -fsanitize=address
@@ -23,12 +26,12 @@ p% : build/problem%.o $(LIBOBJ) $(LIBHEAD)
 	@ echo "Linking $@"
 	@ $(CXX) $(FLAGS)  $^ -o $@ $(LFLAGS)
 
-build/%.o: %.cpp
+build/%.o: src/%.cpp
 	@ mkdir -p $(@D)
 	@ echo "Compiling $@"
 	@ $(CXX) $(FLAGS) -c $< -o $@
 
-clean :
+clean:
 	@ echo "Removing build files"
 	@ rm -f $(BIN)
 	@ rm -rf build
