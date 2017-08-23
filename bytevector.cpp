@@ -84,16 +84,6 @@ bytevector base64_to_bytevector(string input) {
   return output;
 }
 
-bytevector int_to_bytevector(uint64_t input)
-{
-  bytevector bv;
-  for (unsigned i = 0; i < 8; i++) {
-    byte b = static_cast<byte>((input >> (8 * i)) & 0xFF);
-    bv.push_back(b);
-  }
-  return bv;
-}
-
 byte hex_digit_to_bits(byte c) {
   if ('0' <= c && c <= '9') {
     return (c - '0');
@@ -156,6 +146,19 @@ string bytevector_to_base64(bytevector bytes) {
     output += charset[i2];
     output += charset[i3];
     output += charset[i4];
+  }
+  return output;
+}
+
+uint32_t bytevector_to_int(bytevector bv) {
+  if (bv.size() != 4) {
+    throw std::invalid_argument(
+        "Length of parameter 'bv' to bytevector_to_int must be 4");
+  }
+
+  uint32_t output = 0;
+  for (unsigned i = 0; i < 4; i++) {
+    output |= (bv[i] << (8 * i));
   }
   return output;
 }
@@ -396,16 +399,26 @@ array<byte, 16> random_key(void) {
   return key;
 }
 
-bytevector random_string(void) {
+bytevector random_string(unsigned length) {
   std::uniform_int_distribution<> random_len(0, 256);
-  int len = random_len(gen);
+  if (length == 0) length = random_len(gen);
 
   std::uniform_int_distribution<> dis(32, 126);
   bytevector s;
-  for (int i = 0; i < len; i++) {
+  for (unsigned i = 0; i < length; i++) {
     s.push_back(dis(gen));
   }
   return s;
+}
+
+bytevector mt19937_token(unsigned length, uint32_t seed) {
+  bytevector output;
+  MT19937 m(seed);
+  for (unsigned i = 0; i < length; i+=4) {
+    output += int_to_bytevector(m.next()); 
+  }
+  output.resize(length);
+  return output;
 }
 
 bytevector encrypt_ecb(bytevector data, byte *key, bool pad) {
@@ -557,6 +570,26 @@ bytevector encrypt_ctr(bytevector plaintext, byte *key, uint64_t nonce)
 bytevector decrypt_ctr(bytevector ciphertext, byte *key, uint64_t nonce)
 {
   return do_ctr(ciphertext, key, nonce);
+}
+
+bytevector do_mt_stream(bytevector input, uint16_t key) {
+  MT19937 m(static_cast<uint32_t>(key));
+  bytevector output;
+  vector<bytevector> blocks = split_into_blocks(input, 4);
+  for (const bytevector &block : blocks) {
+    bytevector ks = int_to_bytevector(m.next());
+    ks.resize(block.size());
+    output += block ^ ks; 
+  }
+  return output;
+}
+
+bytevector encrypt_mt_stream(bytevector plaintext, uint16_t key) {
+  return do_mt_stream(plaintext, key);
+}
+
+bytevector decrypt_mt_stream(bytevector ciphertext, uint16_t key) {
+  return do_mt_stream(ciphertext, key);
 }
 
 cookie parse_cookie(string cookie_str, char separator) {

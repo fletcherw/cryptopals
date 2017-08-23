@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <type_traits>
 
 typedef unsigned char byte;
 typedef std::vector<byte> bytevector;
@@ -20,10 +21,23 @@ bytevector hex_to_bytevector(std::string s);
 bytevector string_to_bytevector(std::string s);
 bytevector base64_file_to_bytevector(std::string file);
 bytevector base64_to_bytevector(std::string input);
-bytevector int_to_bytevector(uint64_t i);
+
+template <class T>
+bytevector int_to_bytevector(T input)
+{
+  static_assert(std::is_integral<T>::value, 
+                "Input to int_to_bytevector must have integral type");
+  bytevector bv;
+  for (unsigned i = 0; i < sizeof(T); i++) {
+    byte b = static_cast<byte>((input >> (8 * i)) & 0xFF);
+    bv.push_back(b);
+  }
+  return bv;
+}
 
 std::string bytevector_to_string(bytevector bytes);
 std::string bytevector_to_base64(bytevector bytes);
+uint32_t bytevector_to_int(bytevector bv);
 
 std::array<double, 27> letter_frequencies(bytevector b);
 bytevector repeating_key_xor(bytevector text, std::string key);
@@ -41,8 +55,10 @@ bytevector strip_padding(bytevector bv);
 void crypto_init(void);
 void crypto_cleanup(void);
 void handleErrors(void);
+
 std::array<byte, 16> random_key(void);
-bytevector random_string(void);
+bytevector random_string(unsigned length=0);
+bytevector mt19937_token(unsigned length, uint32_t seed);
 
 bytevector encrypt_ecb(bytevector plaintext, byte *key, bool pad);
 bytevector decrypt_ecb(bytevector ciphertext, byte *key, bool pad);
@@ -52,6 +68,9 @@ bytevector decrypt_cbc(bytevector ciphertext, byte *key, byte *iv);
 
 bytevector encrypt_ctr(bytevector plaintext, byte *key, uint64_t nonce);
 bytevector decrypt_ctr(bytevector ciphertext, byte *key, uint64_t nonce);
+
+bytevector encrypt_mt_stream(bytevector plaintext, uint16_t key);
+bytevector decrypt_mt_stream(bytevector ciphertext, uint16_t key);
 
 cookie parse_cookie(std::string cookie_str, char separator);
 

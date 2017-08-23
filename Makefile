@@ -17,4 +17,5 @@ p% : problem%.cpp bytevector.h bytevector.cpp
 	@ $(CC) $(FLAGS) bytevector.cpp $< $(LFLAGS) -o $@
 
 clean :
-	rm -f $(BIN)
+	@ echo "Removing all executables"
+	@ rm -f $(BIN)

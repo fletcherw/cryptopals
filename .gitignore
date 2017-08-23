@@ -1,3 +1,4 @@
-p*.out
+p*
+!problem*
 cached
 output
