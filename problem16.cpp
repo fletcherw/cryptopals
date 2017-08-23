@@ -4,6 +4,7 @@
 #include <array>
 
 #include "bytevector.h"
+#include "cookie.h"
 
 using std::string;
 using std::array;

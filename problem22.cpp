@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "bytevector.h"
+#include "MT19937.h"
 
 using std::string;
 using std::cout;
@@ -23,13 +24,13 @@ int main() {
   cout << "Seeded MT19937 with: " << time << endl;
 
   std::this_thread::sleep_for(std::chrono::seconds(10 + durationMT() % 990));
-  uint32_t value = mt.next();
+  uint32_t value = mt();
   cout << "First value: " << value << endl;
 
   time = std::chrono::seconds(std::time(NULL)).count();
   for (int64_t i = time; i > 0; i--) {
     MT19937 m(static_cast<uint32_t>(i & 0xFFFFFFFFl));
-    if (m.next() == value) {
+    if (m() == value) {
       cout << "Guess at MT seed is: " << i << endl;
       break;
     }

@@ -1,15 +1,16 @@
-CXX    = g++
-FLAGS  = -std=c++11 -g -Wall -Wextra -Werror
-LFLAGS = -lssl -lcrypto
+CXX     = g++
+FLAGS   = -std=c++11 -g -Wall -Wextra -Werror
+LFLAGS  = -lssl -lcrypto
 
-BINCPP = $(wildcard problem*.cpp)
-BIN    = $(BINCPP:problem%.cpp=p%) 
+BINCPP  = $(wildcard problem*.cpp)
+BIN     = $(BINCPP:problem%.cpp=p%) 
 
-LIBCPP = bytevector.cpp cookie.cpp
-LIBOBJ = $(LIBCPP:%.cpp=build/%.o) 
+LIBCPP  = bytevector.cpp cookie.cpp MT19937.cpp
+LIBOBJ  = $(LIBCPP:%.cpp=build/%.o) 
+LIBHEAD = $(LIBCPP:%.cpp=%.h) 
 
-CPP    = $(BINCPP) $(LIBCPP)
-OBJ    = $(CPP:%.cpp=build/%.o)
+CPP     = $(BINCPP) $(LIBCPP)
+OBJ     = $(CPP:%.cpp=build/%.o)
 
 ifdef ASAN
   FLAGS += -fsanitize=address
@@ -18,7 +19,7 @@ endif
 
 all: $(BIN)
 
-p% : build/problem%.o $(LIBOBJ)
+p% : build/problem%.o $(LIBOBJ) $(LIBHEAD)
 	@ echo "Linking $@"
 	@ $(CXX) $(FLAGS)  $^ -o $@ $(LFLAGS)
 

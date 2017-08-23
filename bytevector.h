@@ -70,18 +70,3 @@ bytevector decrypt_ctr(bytevector ciphertext, byte *key, uint64_t nonce);
 bytevector encrypt_mt_stream(bytevector plaintext, uint16_t key);
 bytevector decrypt_mt_stream(bytevector ciphertext, uint16_t key);
 
-uint32_t untemper(uint32_t val);
-
-class MT19937 {
-public:
-  MT19937(uint32_t seed);
-  MT19937(std::array<uint32_t, 624> state);
-  uint32_t next(); 
-
-private:
-  void twist();
-
-  unsigned index;
-  std::array<uint32_t, 624> mt;
-};
-

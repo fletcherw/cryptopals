@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "bytevector.h"
+#include "MT19937.h"
 
 using std::vector;
 using std::cout;
@@ -41,7 +42,7 @@ int main() {
   for (unsigned seed = 0; seed < (1u << 16); seed++) {
     MT19937 m(seed);
     uint32_t value;
-    for (unsigned i = 0; i < steps; i++) value = m.next(); 
+    for (unsigned i = 0; i < steps; i++) value = m(); 
     if (value == state) {
       cout << "Predicted seed is " << seed << endl; 
       break;

@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "bytevector.h"
+#include "cookie.h"
 
 using std::string;
 using std::unordered_map;

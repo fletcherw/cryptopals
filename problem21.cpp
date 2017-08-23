@@ -5,6 +5,7 @@
 #include <iomanip>
 
 #include "bytevector.h"
+#include "MT19937.h"
 
 using std::string;
 using std::cout;
@@ -15,7 +16,7 @@ int main() {
   MT19937 m(1);
 
   for (int i = 0; i < 10; i++) {
-    cout << std::setw(10) << gen() << " " << m.next() << endl;
+    cout << std::setw(10) << gen() << " " << m() << endl;
   }
 
   return 0;
