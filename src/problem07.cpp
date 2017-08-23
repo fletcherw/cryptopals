@@ -1,21 +1,15 @@
 #include <iostream>
-#include <string>
-#include <vector>
+#include <fstream>
 
 #include "bytevector.h"
-
-using std::vector;
-using std::string;
-using std::cout;
-using std::endl;
-
-byte *key = (byte *)"YELLOW SUBMARINE";
+#include "Crypto.h"
 
 int main() {
-  crypto_init();
-  bytevector ciphertext = base64_file_to_bytevector("problem7.data");
-  bytevector plaintext = decrypt_ecb(ciphertext, key, true);
-  cout << bytevector_to_string(plaintext) << endl;
-  crypto_cleanup();
+  bytevector key("YELLOW SUBMARINE", bytevector::PLAIN);
+  Crypto cr;
+  std::ifstream in_file("data/problem07.data");
+  bytevector ciphertext(in_file);
+  bytevector plaintext = cr.decrypt_ecb(ciphertext, key, true);
+  std::cout << plaintext << std::endl;
   return 0;
 }

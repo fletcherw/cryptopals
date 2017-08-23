@@ -1,23 +1,20 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
-#include <iterator>
-#include <algorithm>
-#include <stdexcept>
 
 #include "bytevector.h"
 
-using std::vector;
-using std::pair;
 using std::string;
 using std::cout;
 using std::endl;
 
 int main() {
-  bytevector data = base64_file_to_bytevector("problem6.data");
+  std::ifstream input_file("data/problem06.data");
+  bytevector data(input_file);
 
-  vector<pair<double, int>> keys;
+  unsigned min_dist = static_cast<unsigned>(-1);
+  unsigned min_size;
+
   for (int key_size = 2; key_size < 40; key_size++) {
     auto it = data.begin();
     double dist = 0;
@@ -39,16 +36,17 @@ int main() {
     dist += (hamming_distance(b, d) / (double) key_size);
     dist += (hamming_distance(c, d) / (double) key_size);
 
-    keys.push_back(std::make_pair(dist, key_size));
+    if (dist < min_dist) {
+      min_dist = dist;
+      min_size = key_size;
+    }
   }
-  std::sort(keys.begin(), keys.end());
-  int key_size = keys[0].second;
-  cout << "key_size: " << key_size << endl;
+  cout << "key_size: " << min_size << endl;
 
-  string key = solve_repeating_key_xor(data, key_size);
+  string key = solve_repeating_key_xor(data, min_size);
   cout << "key: " << key << endl;
 
-  bytevector plain = repeating_key_xor(data, key);
-  cout << bytevector_to_string(plain) << endl;
+  data.repeating_key_xor(key);
+  cout << data << endl;
   return 0;
 }

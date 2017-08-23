@@ -1,30 +1,18 @@
 #include <iostream>
-#include <string>
-#include <vector>
-#include <array>
-#include <random>
-#include <iomanip>
 
 #include "bytevector.h"
+#include "Crypto.h"
 
-using std::string;
-using std::array;
-using std::vector;
-using std::cout;
-using std::endl;
+bytevector ciphertext(
+      "L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==",
+      bytevector::BASE64);
 
-bytevector ciphertext =
-  base64_to_bytevector(
-      "L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==");
-
-byte* key = (byte *)"YELLOW SUBMARINE";
+bytevector key("YELLOW SUBMARINE", bytevector::PLAIN);
+Crypto cr;
 
 int main() {
-  crypto_init();
+  bytevector plaintext = cr.decrypt_ctr(ciphertext, key, 0);
 
-  bytevector bv = decrypt_ctr(ciphertext, key, 0);
-
-  cout << bytevector_to_string(bv) << endl;
-  crypto_cleanup();
+  std::cout << plaintext << std::endl;
   return 0;
 }

@@ -1,28 +1,30 @@
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <array>
 #include <cstdlib>
 
 #include "bytevector.h"
+#include "Crypto.h"
 
 using std::string;
-using std::array;
 using std::vector;
 using std::cout;
 using std::endl;
 
-array<byte, 16> key = random_key();
+namespace {
+  bytevector key = random_key();
+  Crypto cr;
+}
 
 bytevector encrypt(bytevector plaintext) {
-  bytevector sec = base64_file_to_bytevector("problem12.data");
-  bytevector ciphertext = encrypt_ecb(plaintext + sec, key.data(), true);
+  std::ifstream in_file("data/problem12.data");
+  bytevector sec(in_file);
+  bytevector ciphertext = cr.encrypt_ecb(plaintext + sec, key, true);
   return ciphertext;
 }
 
 int main() {
-  crypto_init();
-
   int block_size;
   unsigned start_len = encrypt(bytevector()).size();
   for (int i = 1; i < 128; i++) {
@@ -37,7 +39,7 @@ int main() {
 
   bytevector input(block_size * 2, 'A');
   bytevector res = encrypt(input);
-  vector<bytevector> blocks = split_into_blocks(res, block_size);
+  vector<bytevector> blocks = res.split_into_blocks(block_size);
   cout << "Block mode: ";
   if (blocks[0] == blocks[1]) {
     cout << "ECB" << endl;
@@ -53,12 +55,12 @@ int main() {
 
     bytevector padding(16 - block_offset - 1, 'q');
     res = encrypt(padding);
-    vector<bytevector> enc_blocks = split_into_blocks(res, block_size);
+    vector<bytevector> enc_blocks = res.split_into_blocks(block_size);
 
     byte b;
     for (b = 10; b <= 126; b++) {
       bytevector test_res = encrypt(padding + decrypted + b);
-      vector<bytevector> test_blocks = split_into_blocks(test_res, block_size);
+      vector<bytevector> test_blocks = test_res.split_into_blocks(block_size);
       if (test_blocks[block_index] == enc_blocks[block_index]) {
         decrypted.push_back(b);
         break;
@@ -67,7 +69,6 @@ int main() {
     if (b == 126) break;
   }
 
-  cout << "Decrypted: " << bytevector_to_string(decrypted) << endl;
-  crypto_cleanup();
+  cout << "Decrypted: " << decrypted << endl;
   return 0;
 }

@@ -6,19 +6,22 @@
 #include <iomanip>
 
 #include "bytevector.h"
+#include "Crypto.h"
 
 using std::string;
-using std::array;
 using std::vector;
 using std::cout;
 using std::endl;
 
 namespace {
-  std::random_device rd;
-  std::mt19937 gen(rd());
 
-  array<byte, 16> key = random_key();
-  array<byte, 16> iv = random_key();
+std::random_device rd;
+std::mt19937 gen(rd());
+
+bytevector key = random_key();
+bytevector iv = random_key();
+Crypto cr;
+
 }
 
 vector<string> strings =
@@ -33,33 +36,32 @@ vector<string> strings =
    "MDAwMDA4b2xsaW4nIGluIG15IGZpdmUgcG9pbnQgb2g=",
    "MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzbyBteSBoYWlyIGNhbiBibG93"};
 
-bytevector getCipherText() {
+bytevector get_cipher_text() {
   std::uniform_int_distribution<> dis(0, strings.size() - 1);
   string input = strings[dis(gen)];
-  bytevector plaintext = pad_to_block(base64_to_bytevector(input), 16);
-  bytevector ciphertext = encrypt_cbc(plaintext, key.data(), iv.data());
+  bytevector plaintext(input, bytevector::BASE64);
+  plaintext.pad_to_block(16);
+  bytevector ciphertext = cr.encrypt_cbc(plaintext, key, iv);
   return ciphertext;
 }
 
 bool decrypt(bytevector ciphertext) {
-  bytevector plaintext = decrypt_cbc(ciphertext, key.data(), iv.data());
-  return check_padding(plaintext);
+  bytevector plaintext = cr.decrypt_cbc(ciphertext, key, iv);
+  return plaintext.check_padding();
 }
 
 int main() {
-  crypto_init();
+  cout << "Key: " << key << endl;
+  cout << "IV: "  << iv  << endl;
 
-  cout << std::string(key.data(), key.data() + 16) << endl;
-  cout << std::string(iv.data(), iv.data() + 16) << endl;
-
-  bytevector ciphertext = getCipherText();
+  bytevector ciphertext = get_cipher_text();
   cout << ciphertext << endl;
-  vector<bytevector> blocks = split_into_blocks(ciphertext, 16);
-  bytevector prev = bytevector(iv.data(), iv.data() + 16);
+  vector<bytevector> blocks = ciphertext.split_into_blocks(16);
+  bytevector prev = iv;
   bytevector plaintext;
   for (const bytevector& block : blocks) {
-    bytevector plain_block = bytevector(16, '_');
-    bytevector corrupter = bytevector(16, '\0');
+    bytevector plain_block(16, '_');
+    bytevector corrupter(16, '\0');
     for (int i = 15; i >= 0; i--) {
       for (int j = 15; j > i; j--) {
         corrupter[j] ^= (16 - i - 1);
@@ -75,13 +77,12 @@ int main() {
             bool success = decrypt(test_corrupter + block);
             test_corrupter[i-1] ^= (i+1);
             if (!success) {
-              cout << "FAIL" << endl;
               continue;
             }
           }
           plain_block[i] = guess ^ prev[i];
           std::cout << std::setw(2) << i << std::setw(0)
-                    << " " << bytevector_to_string(plain_block) << " " << guess << endl;
+                    << " " << plain_block << " " << guess << endl;
           corrupter[i] ^= guess ^ (16 - i);
           break;
         }
@@ -92,7 +93,7 @@ int main() {
     prev = block;
   }
 
-  cout << bytevector_to_string(strip_padding(plaintext)) << endl;
-  crypto_cleanup();
+  plaintext.strip_padding();
+  cout << plaintext << endl;
   return 0;
 }

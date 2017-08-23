@@ -28,40 +28,41 @@ uint32_t untemper(uint32_t val)
 
 MT19937::MT19937(uint32_t seed)
 {
-  mt[0] = seed;
-  index = 624;
+  state_[0] = seed;
+  index_ = 624;
   for (unsigned i = 1; i < 624; i++) {
-    mt[i] = 1812433253 * (mt[i - 1] ^ (mt[i - 1] >> 30)) + i;
+    state_[i] = 1812433253 * (state_[i - 1] ^ (state_[i - 1] >> 30)) + i;
   }
 }
 
 MT19937::MT19937(std::array<uint32_t, 624> state)
 {
-  index = 624;
+  index_ = 624;
   for (unsigned i = 0; i < 624; i++) {
-    mt[i] = state[i];
+    state_[i] = state[i];
   }
 }
 
-uint32_t MT19937::operator()()
+uint32_t MT19937::operator ()()
 {
-  if (index >= 624) {
+  if (index_ >= 624) {
     for (unsigned i = 0; i < 624; i++) {
-      uint32_t y = (mt[i] & 0x80000000) + (mt[(i + 1) % 624] & 0x7fffffff);
-      mt[i] = mt[(i + 397) % 624] ^ (y >> 1);
+      uint32_t y = (state_[i] & 0x80000000) + 
+                   (state_[(i + 1) % 624] & 0x7fffffff);
+      state_[i] = state_[(i + 397) % 624] ^ (y >> 1);
       if (y % 2 == 1) {
-        mt[i] ^= 0x9908b0df; 
+        state_[i] ^= 0x9908b0df; 
       }
     }
-    index = 0;
+    index_ = 0;
   }
 
-  uint32_t y = mt[index];
+  uint32_t y = state_[index_];
   y ^= y >> 11;
   y ^= (y << 7) & 0x9d2c5680;
   y ^= (y << 15) & 0xefc60000;
   y ^= y >> 18;
 
-  index++;
+  index_++;
   return y;
 }

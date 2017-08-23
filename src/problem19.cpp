@@ -1,19 +1,23 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <array>
 #include <random>
 #include <iomanip>
 
 #include "bytevector.h"
+#include "Crypto.h"
 
 using std::string;
-using std::array;
 using std::vector;
 using std::cout;
 using std::endl;
 
-array<byte, 16> key = random_key();
+namespace {
+
+bytevector key = random_key();
+Crypto cr;
+
+}
 
 vector<string> plaintexts =
   {"SSBoYXZlIG1ldCB0aGVtIGF0IGNsb3NlIG9mIGRheQ==",
@@ -58,18 +62,15 @@ vector<string> plaintexts =
   "QSB0ZXJyaWJsZSBiZWF1dHkgaXMgYm9ybi4="};
 
 int main() {
-  crypto_init();
-
   vector<bytevector> ciphertexts;
   for (const string &s : plaintexts) {
-    bytevector bv = encrypt_ctr(base64_to_bytevector(s), key.data(), 0);
+    bytevector bv = cr.encrypt_ctr(bytevector(s, bytevector::BASE64), key, 0);
     ciphertexts.push_back(bv);
   }
 
   for (bytevector bv : ciphertexts) {
-    cout << bv << endl;
+    cout << bv.to_string(bytevector::HEX) << endl;
   }
 
-  crypto_cleanup();
   return 0;
 }

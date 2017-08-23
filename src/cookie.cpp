@@ -1,12 +1,12 @@
 #include "cookie.h"
 
+#include <iostream>
 #include <vector>
 
-using std::vector;
 using std::string;
 
 cookie parse_cookie(string cookie_str, char separator) {
-  vector<string> kv_pairs;
+  std::vector<string> kv_pairs;
   size_t last_idx = 0;
   size_t idx = cookie_str.find(separator);
   while (idx != string::npos) {
@@ -22,5 +22,13 @@ cookie parse_cookie(string cookie_str, char separator) {
     c[s.substr(0, idx)] = s.substr(idx+1);
   }
   return c;
+}
+
+std::ostream& operator<<(std::ostream& os, cookie c)
+{
+  for (const auto &pair : c) {
+    std::cout << pair.first << " : " << pair.second << std::endl;
+  }
+  return os;
 }
 

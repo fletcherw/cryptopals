@@ -1,22 +1,22 @@
 #include <iostream>
-#include <vector>
 #include <stdexcept>
 
 #include "bytevector.h"
 
-using std::vector;
 using std::cout;
 using std::endl;
 
 int main() {
-  bytevector a = string_to_bytevector("ICE ICE BABY\x04\x04\x04\x04");
+  bytevector a("ICE ICE BABY\x04\x04\x04\x04", bytevector::PLAIN);
   cout << a << endl;
-  cout << strip_padding(a) << endl;
+  a.strip_padding();
+  cout << a << endl;
 
-  bytevector b = string_to_bytevector("ICE ICE BABY\x05\x05\x05\x05");
+  bytevector b("ICE ICE BABY\x05\x05\x05\x05", bytevector::PLAIN);
   cout << b << endl;
   try {
-    cout << strip_padding(b) << endl;
+    b.strip_padding();
+    cout << b << endl;
   } catch (std::invalid_argument &) {
     cout << "Padding is invalid" << endl;
   }

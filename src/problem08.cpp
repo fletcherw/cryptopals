@@ -6,19 +6,15 @@
 
 #include "bytevector.h"
 
-using std::vector;
-using std::ifstream;
 using std::string;
-using std::cout;
-using std::endl;
 
 int main() {
-  ifstream is("problem8.data");
+  std::ifstream in_file("data/problem08.data");
   string line;
   int row = 0;
-  while(is.peek() != EOF) {
-    getline(is, line);
-    vector<string> chunks;
+  while(in_file.peek() != EOF) {
+    getline(in_file, line);
+    std::vector<string> chunks;
     for (unsigned i = 0; i < line.size(); i += 16) {
       chunks.push_back(line.substr(i, 16));
     }
@@ -30,7 +26,7 @@ int main() {
 
     for (string s : chunks) {
       if (strings.count(s) > 1) {
-        cout << row << endl;
+        std::cout << row << std::endl;
         break;
       }
     }

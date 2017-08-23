@@ -1,47 +1,44 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <array>
-#include <cstdlib>
-#include <ctime>
 
 #include "bytevector.h"
+#include "Crypto.h"
 
 using std::string;
-using std::array;
 using std::vector;
 using std::cout;
 using std::endl;
 
+static Crypto cr;
+
 bytevector random_encrypt(bytevector data) {
-  array<byte, 16> key = random_key();
+  bytevector key = random_key(16);
 
-  bytevector pt;
-  int prepad = random() % 6 + 5;
-  for (int i = 0; i < prepad; i++) pt.push_back(rand() % 95 + 32);
-  for (byte b : data) pt.push_back(b);
-  int postpad = random() % 6 + 5;
-  for (int i = 0; i < postpad; i++) pt.push_back(rand() % 95 + 32);
+  bytevector plaintext;
+  plaintext += random_string(5, 10);
+  plaintext += data;
+  plaintext += random_string(5, 10);
+  plaintext.pad_to_block(16);
 
-  bytevector ct;
+  bytevector ciphertext;
   if (random() % 2) {
-    ct = encrypt_ecb(pt, key.data(), true);
+    ciphertext = cr.encrypt_ecb(plaintext, key, false);
     cout << "Real:  ECB" << endl;
   } else {
-    array<byte, 16> iv = random_key();
-    ct = encrypt_cbc(pt, key.data(), iv.data());
+    bytevector iv = random_key(16);
+    ciphertext = cr.encrypt_cbc(plaintext, key, iv);
     cout << "Real:  CBC" << endl;
   }
 
-  return ct;
+  return ciphertext;
 }
 
 int main() {
-  srandom(time(NULL));
-  bytevector input = string_to_bytevector(
-      "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
+  srand(time(NULL));
+  bytevector input(43, 'q'); 
   bytevector res = random_encrypt(input);
-  vector<bytevector> blocks = split_into_blocks(res, 16);
+  vector<bytevector> blocks = res.split_into_blocks(16);
   if (blocks[1] == blocks[2]) {
     cout << "Guess: ECB" << endl;
   } else {

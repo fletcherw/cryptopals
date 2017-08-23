@@ -7,7 +7,8 @@ BIN     = $(BINCPP:src/problem%.cpp=p%)
 
 LIBCPP  = src/bytevector.cpp \
           src/cookie.cpp \
-          src/MT19937.cpp
+          src/MT19937.cpp \
+          src/Crypto.cpp
 
 LIBOBJ  = $(LIBCPP:src/%.cpp=build/%.o) 
 LIBHEAD = $(LIBCPP:%.cpp=%.h) 
@@ -24,7 +25,7 @@ all: $(BIN)
 
 p% : build/problem%.o $(LIBOBJ) $(LIBHEAD)
 	@ echo "Linking $@"
-	@ $(CXX) $(FLAGS)  $^ -o $@ $(LFLAGS)
+	@ $(CXX) $(FLAGS) $< $(LIBOBJ) -o $@ $(LFLAGS)
 
 build/%.o: src/%.cpp
 	@ mkdir -p $(@D)

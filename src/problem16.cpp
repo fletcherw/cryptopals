@@ -1,25 +1,26 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <array>
 
 #include "bytevector.h"
 #include "cookie.h"
+#include "Crypto.h"
 
 using std::string;
-using std::array;
 using std::vector;
 using std::cout;
 using std::endl;
 
-array<byte, 16> key = random_key();
-array<byte, 16> iv = random_key();
+namespace {
+bytevector key = random_key();
+bytevector iv = random_key();
+Crypto cr;
+}
 
 bytevector encrypt(bytevector userdata) {
-  bytevector prefix =
-    string_to_bytevector("comment1=cooking%20MCs;userdata=");
-  bytevector suffix =
-    string_to_bytevector(";comment2=%20like%20a%20pound%20of%20bacon");
+  bytevector prefix("comment1=cooking%20MCs;userdata=", bytevector::PLAIN);
+  bytevector suffix(
+      ";comment2=%20like%20a%20pound%20of%20bacon", bytevector::PLAIN);
 
   bytevector sanitized;
   for (char c : userdata) {
@@ -31,29 +32,28 @@ bytevector encrypt(bytevector userdata) {
       sanitized.push_back(c);
     }
   }
-  bytevector plaintext = pad_to_block(prefix + sanitized + suffix, 16);
-  bytevector ciphertext = encrypt_cbc(plaintext, key.data(), iv.data());
+  bytevector plaintext = prefix + sanitized + suffix;
+  plaintext.pad_to_block(16);
+  bytevector ciphertext = cr.encrypt_cbc(plaintext, key, iv);
   return ciphertext;
 }
 
 int main() {
-  crypto_init();
 
-  string input = "QQQQQQQQQQQQQQQQ:admin<true";
-  bytevector ciphertext = encrypt(string_to_bytevector(input));
+  bytevector input("QQQQQQQQQQQQQQQQ:admin<true", bytevector::PLAIN);
+  bytevector ciphertext = encrypt(input);
 
   ciphertext[32] ^= 1;
   ciphertext[38] ^= 1;
 
-  bytevector plaintext =
-    strip_padding(decrypt_cbc(ciphertext, key.data(), iv.data()));
-  cookie c = parse_cookie(bytevector_to_string(plaintext), ';');
+  bytevector plaintext = cr.decrypt_cbc(ciphertext, key, iv);
+  plaintext.strip_padding();
+  cookie c = parse_cookie(plaintext.to_string(bytevector::PLAIN), ';');
   for (const auto &member : c) {
     if (member.first == "admin") {
       cout << "Admin: " << member.second << endl;
     }
   }
 
-  crypto_cleanup();
   return 0;
 }

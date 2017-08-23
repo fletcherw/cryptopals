@@ -17,13 +17,13 @@ int main() {
   std::mt19937 durationMT(rd());
   int64_t time = std::chrono::seconds(std::time(NULL)).count();
   cout << "Current epoch time: " << time << endl;
-  std::this_thread::sleep_for(std::chrono::seconds(10 + durationMT() % 990));
+  std::this_thread::sleep_for(std::chrono::seconds(durationMT() % 10));
 
   time = std::chrono::seconds(std::time(NULL)).count();
   MT19937 mt(static_cast<uint32_t>(time & 0xFFFFFFFFl));
   cout << "Seeded MT19937 with: " << time << endl;
 
-  std::this_thread::sleep_for(std::chrono::seconds(10 + durationMT() % 990));
+  std::this_thread::sleep_for(std::chrono::seconds(durationMT() % 10));
   uint32_t value = mt();
   cout << "First value: " << value << endl;
 

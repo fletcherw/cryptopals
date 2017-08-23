@@ -1,22 +1,23 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <array>
-#include <unordered_map>
 
 #include "bytevector.h"
+#include "Crypto.h"
 #include "cookie.h"
 
 using std::string;
-using std::unordered_map;
-using std::array;
 using std::vector;
 using std::cout;
 using std::endl;
 
-array<byte, 16> key = random_key();
+namespace {
+  bytevector key = random_key(16);
+  Crypto cr;
+}
 
-string profile_for(string email) {
+string profile_for(string email)
+{
   string sanitized_email;
   for (char c : email) {
     if (c == '&' || c == '=') continue;
@@ -32,18 +33,20 @@ string profile_for(string email) {
   return profile;
 }
 
-bytevector encrypt(string profile) {
-  bytevector plaintext = string_to_bytevector(profile);
-  return encrypt_ecb(plaintext, key.data(), true);
+bytevector encrypt(string profile)
+{
+  bytevector plaintext(profile, bytevector::PLAIN);
+  return cr.encrypt_ecb(plaintext, key, true);
 }
 
-cookie decrypt(bytevector profile) {
-  bytevector plaintext = decrypt_ecb(profile, key.data(), true);
-  return parse_cookie(bytevector_to_string(plaintext), '&');
+cookie decrypt(bytevector profile)
+{
+  bytevector plaintext = cr.decrypt_ecb(profile, key, true);
+  return parse_cookie(plaintext.to_string(bytevector::PLAIN), '&');
 }
 
-int main() {
-  crypto_init();
+int main()
+{
   bytevector base = encrypt(profile_for("admin@site.us"));
   bytevector role =
     encrypt(profile_for("qqqqqqqqqqadmin\xb\xb\xb\xb\xb\xb\xb\xb\xb\xb\xb"));
@@ -53,11 +56,6 @@ int main() {
   exploit.insert(exploit.end(), role.begin() + 16, role.begin() + 32);
 
   cookie exploit_cookie = decrypt(exploit);
-
-  for (const auto &pair : exploit_cookie) {
-    cout << pair.first << " : " << pair.second << endl;
-  }
-
-  crypto_cleanup();
+  cout << exploit_cookie;
   return 0;
 }

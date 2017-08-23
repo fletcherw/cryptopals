@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <vector>
 #include <array>
 #include <string>
@@ -10,21 +9,22 @@
 #include <stdexcept>
 #include <cstdio>
 
-#include <openssl/conf.h>
-#include <openssl/evp.h>
-#include <openssl/err.h>
 #include <strings.h>
 
 #include "MT19937.h"
 
-using namespace std;
+using std::invalid_argument;
+using std::string;
+using std::vector;
+
+using std::array;
 
 namespace {
-  std::random_device rd;
-  std::mt19937 gen(rd());
-}
+  const char base64_charset[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-char base64_char_decode(char c) {
+char decode_base64_char(char c)
+{
   if ('A' <= c && c <= 'Z') {
     return (c - 'A');
   } else if ('a' <= c && c <= 'z') {
@@ -38,55 +38,12 @@ char base64_char_decode(char c) {
   } else if (c == '=') {
     return 0;
   } else {
-    throw std::invalid_argument("character is not base64");
+    throw invalid_argument("decode_base64_char: character is not base64");
   }
 }
 
-bytevector base64_file_to_bytevector(string file) {
-  std::ifstream input(file);
-  bytevector output;
-  char a, b, c, d;
-  while (input >> a >> b >> c >> d) {
-    char i1 = base64_char_decode(a);
-    char i2 = base64_char_decode(b);
-    char i3 = base64_char_decode(c);
-    char i4 = base64_char_decode(d);
-
-    char b1 = (i1 << 2) | ((i2 >> 4) & 0x03);
-    char b2 = (i2 << 4) | ((i3 >> 2) & 0x0F);
-    char b3 = (i3 << 6) | (i4);
-
-    output.push_back(b1);
-    output.push_back(b2);
-    output.push_back(b3);
-  }
-  return output;
-}
-
-bytevector base64_to_bytevector(string input) {
-  if (input.size() % 4 != 0) {
-    throw invalid_argument(
-        "input to base64_to_bytevector must have length that is multiple of 4");
-  }
-  bytevector output;
-  for (unsigned i = 0; i < input.size(); i += 4) {
-    char i1 = base64_char_decode(input[i]);
-    char i2 = base64_char_decode(input[i+1]);
-    char i3 = base64_char_decode(input[i+2]);
-    char i4 = base64_char_decode(input[i+3]);
-
-    char b1 = (i1 << 2) | ((i2 >> 4) & 0x03);
-    char b2 = (i2 << 4) | ((i3 >> 2) & 0x0F);
-    char b3 = (i3 << 6) | (i4);
-
-    output.push_back(b1);
-    output.push_back(b2);
-    output.push_back(b3);
-  }
-  return output;
-}
-
-byte hex_digit_to_bits(byte c) {
+byte hex_digit_to_bits(byte c)
+{
   if ('0' <= c && c <= '9') {
     return (c - '0');
   } else if ('a' <= c && c <= 'f') {
@@ -94,126 +51,297 @@ byte hex_digit_to_bits(byte c) {
   } else if ('A' <= c && c <= 'F') {
     return c - 'A' + 10;
   } else {
-    throw invalid_argument("byte passed was not valid hex");
+    throw invalid_argument("hex_digit_to_bits: byte passed was not valid hex");
   }
 }
 
-bytevector hex_to_bytevector(string s) {
-  bytevector bytes;
-  auto it = s.begin();
-  while (it != s.end()) {
-    byte d1 = *it;
-    ++it;
-    byte d2 = (it == s.end()) ? '\0' : *it;
-    ++it;
+void decode_base64_to_vector(char a, char b, char c, char d, vector<byte> &v)
+{
+  char i1 = decode_base64_char(a);
+  char i2 = decode_base64_char(b);
+  char i3 = decode_base64_char(c);
+  char i4 = decode_base64_char(d);
 
-    byte b1 = hex_digit_to_bits(d1);
-    byte b2 = hex_digit_to_bits(d2);
-    bytes.push_back(b1 << 4 | b2);
-  }
-  return bytes;
+  char b1 = (i1 << 2) | ((i2 >> 4) & 0x03);
+  char b2 = (i2 << 4) | ((i3 >> 2) & 0x0F);
+  char b3 = (i3 << 6) | (i4);
+
+  v.push_back(b1);
+  v.push_back(b2);
+  v.push_back(b3);
 }
 
-bytevector string_to_bytevector(string s) {
-  bytevector bytes;
-  for (byte c : s) { bytes.push_back(c); }
-  return bytes;
+} // namespace
+
+bytevector::bytevector()
+{
 }
 
-string bytevector_to_string(bytevector bytes) {
-  ostringstream out;
-  for (byte c : bytes) {
-    out << c;
-  }
-  return out.str();
+bytevector::bytevector(size_t count, byte value)
+{
+  resize(count, value);
 }
 
-static const char charset[] =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+bytevector::bytevector(const string &s, bv_mode mode)
+{
+  if (mode == bytevector::HEX) {
+    string::const_iterator it = s.begin();
+    while (it != s.end()) {
+      byte d1 = *it;
+      ++it;
+      byte d2 = (it == s.end()) ? '\0' : *it;
+      ++it;
 
-string bytevector_to_base64(bytevector bytes) {
-  string output;
-  auto it = bytes.begin();
-  while (it != bytes.end()) {
-    char b1 = *(it++);
-    char b2 = (it == bytes.end()) ? '\0' : *(it++);
-    char b3 = (it == bytes.end()) ? '\0' : *(it++);
+      byte b1 = hex_digit_to_bits(d1);
+      byte b2 = hex_digit_to_bits(d2);
+      data_.push_back(b1 << 4 | b2);
+    }
+  } 
+  else if (mode == bytevector::BASE64) {
+    if (s.size() % 4 != 0) {
+      throw invalid_argument(
+          "bytevector: base64 input must have length that is multiple of 4");
+    }
 
-    int i1 = (b1 & 0xFC) >> 2;
-    int i2 = (b1 & 0x03) << 4 | ((b2 & 0xF0) >> 4);
-    int i3 = (b2 & 0x0F) << 2 | ((b3 & 0xC0) >> 6);
-    int i4 =  b3 & 0x3F;
-
-    output += charset[i1];
-    output += charset[i2];
-    output += charset[i3];
-    output += charset[i4];
+    for (size_t i = 0; i < s.size(); i += 4) {
+      decode_base64_to_vector(s[i], s[i+1], s[i+2], s[i+3], data_);
+    }
   }
-  return output;
+  else if (mode == bytevector::PLAIN) {
+    for (byte c : s) data_.push_back(c);
+  }
+  else {
+    throw invalid_argument("bytevector: invalid mode");
+  }
 }
 
-uint32_t bytevector_to_int(bytevector bv) {
-  if (bv.size() != 4) {
-    throw std::invalid_argument(
-        "Length of parameter 'bv' to bytevector_to_int must be 4");
+bytevector::bytevector(std::ifstream& is, bv_mode mode)
+{
+  if (mode != bytevector::BASE64) {
+    throw invalid_argument(
+        "bytevector: istream constructor only supports base64 mode");
   }
 
-  uint32_t output = 0;
-  for (unsigned i = 0; i < 4; i++) {
-    output |= (bv[i] << (8 * i));
+  char a, b, c, d;
+  while (is >> a >> b >> c >> d) {
+    decode_base64_to_vector(a, b, c, d, data_);
   }
-  return output;
 }
 
-ostream& operator<<(ostream& os, bytevector b) {
-  char equiv[3];
-  equiv[2] = '\0';
-  auto it = b.begin();
-  while (it != b.end()) {
-    sprintf(equiv, "%02x", *it);
-    os << equiv;
-    if (it + 1 != b.end()) os << " ";
-    it++;
+bytevector bytevector::operator ^=(const bytevector &other)
+{
+  if (size() != other.size()) {
+    throw invalid_argument("XORed bytevectors must have equal length");
   }
+
+  for (size_t i = 0; i < size(); i++) {
+    data_[i] ^= other.data_[i];
+  }
+  return *this;
+}
+
+bytevector bytevector::operator +=(const bytevector &other)
+{
+  data_.insert(data_.end(), other.data_.begin(), other.data_.end());
+  return *this;
+}
+
+bytevector bytevector::operator +=(char c)
+{
+  data_.push_back(c);
+  return *this;
+}
+
+std::ostream& operator<<(std::ostream& os, bytevector b) {
+  os << b.to_string(bytevector::ASCII); 
   return os;
 }
 
-bytevector operator^(bytevector a, bytevector b) {
-  if (a.size() != b.size()) {
-    throw invalid_argument("XORed buffers must have equal length");
+
+string bytevector::to_string(bv_mode mode) const
+{
+  string out;
+
+  if (mode == bytevector::HEX) {
+    char equiv[3];
+    equiv[2] = '\0';
+
+    for (auto it = data_.begin(); it != data_.end(); it++) {
+      snprintf(equiv, 3, "%02x", *it);
+      out += equiv;
+      if (it + 1 != data_.end()) out += " ";
+    }
+  } 
+  else if (mode == bytevector::BASE64) {
+    for (auto it = data_.begin(); it != data_.end(); it++) {
+      size_t padding = 0;
+
+      char b1 = *(it++);
+      char b2 = (it == data_.end()) ? (padding++, '\0') : *(it++);
+      char b3 = (it == data_.end()) ? (padding++, '\0') : *(it++);
+
+      int i1 = (b1 & 0xFC) >> 2;
+      int i2 = (b1 & 0x03) << 4 | ((b2 & 0xF0) >> 4);
+      int i3 = (b2 & 0x0F) << 2 | ((b3 & 0xC0) >> 6);
+      int i4 =  b3 & 0x3F;
+
+      out += base64_charset[i1];
+      out += base64_charset[i2];
+      out += padding > 1 ? '=' : base64_charset[i3];
+      out += padding > 0 ? '=' : base64_charset[i4];
+    }
+  }
+  else if (mode == bytevector::ASCII) {
+    for (byte c : data_) {
+      if ((32 <= c && c <= 126) ||
+           c == '\n' || c == '\t' || 
+           c == '\r' || c == '\v' ||
+           c == '\f')
+      {
+        out += c; 
+      }
+      else {
+        out += '_';
+      }
+    }
+  }
+  else if (mode == bytevector::PLAIN) {
+    for (byte c : data_) {
+      out += c;
+    }
   }
 
-  auto it_a = a.begin();
-  auto it_b = b.begin();
-  bytevector output;
-  while (it_a != a.end() && it_b != b.end()) {
-    output.push_back(*it_a ^ *it_b);
-    it_a++;
-    it_b++;
+  return out;
+}
+
+uint32_t bytevector::to_uint32() const
+{
+  if (size() != 4) {
+    throw invalid_argument(
+        "to_uint32: length of bytevector must be 4");
   }
-  if (!(it_a == a.end() && it_b == b.end())) {
-    throw logic_error("XOR should fully read both buffers");
+
+  uint32_t output = 0;
+  for (size_t i = 0; i < 4; i++) {
+    output |= (data_[i] << (8 * i));
   }
   return output;
 }
 
-bytevector operator+=(bytevector &a, bytevector b) {
-  a.insert(a.end(), b.begin(), b.end());
-  return a;
+void bytevector::resize(size_t size, byte value)
+{
+  data_.resize(size, value);
 }
 
-bytevector operator+(bytevector a, bytevector b) {
-  return a += b;
+size_t bytevector::size() const
+{
+  return data_.size();
 }
 
-bytevector operator+=(bytevector &a, char b) {
-  a.push_back(b);
-  return a;
+void bytevector::push_back(byte value)
+{
+  data_.push_back(value);
 }
 
-bytevector operator+(bytevector a, char b) {
-  return a += b;
+byte *bytevector::data()
+{
+  return data_.data();
 }
+
+bytevector::iterator bytevector::begin()
+{
+  return data_.begin();
+}
+
+bytevector::iterator bytevector::end()
+{
+  return data_.end();
+}
+
+bytevector::const_iterator bytevector::cbegin() const
+{
+  return data_.cbegin();
+}
+
+bytevector::const_iterator bytevector::cend() const
+{
+  return data_.cend();
+}
+
+void bytevector::pad_to_length(size_t new_size)
+{
+  if (new_size < size()) {
+    throw invalid_argument(
+        "pad_to_length: padding length must be longer than bytevector length");
+  }
+
+  if ((new_size - size()) > 256) {
+    throw invalid_argument(
+        "pad_to_length: PKCS7 cannot pad more than 256 bytes");
+  }
+
+  data_.resize(new_size, new_size - size());
+}
+
+void bytevector::pad_to_block(size_t blocksize)
+{
+  pad_to_length(size() + (blocksize - (size() % blocksize)));
+}
+
+bool bytevector::check_padding() const
+{
+  for (size_t i = 1; i <= 256 && i <= size(); i++) {
+    if (i > 1 && data_[size() - i] != data_[size() - i + 1]) {
+      return false;
+    }
+    if (data_[size() - i] == i) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void bytevector::strip_padding()
+{
+  for (size_t i = 1; i <= 256 && i <= size(); i++) {
+    if (i > 1 && data_[size() - i] != data_[size() - i + 1]) {
+      throw invalid_argument("strip_padding: bad padding");
+    }
+
+    if (data_[size() - i] == i) {
+      data_.resize(size() - i);
+      return;
+    }
+  }
+  throw invalid_argument("strip_padding: bad padding");
+}
+
+void bytevector::repeating_key_xor(string key)
+{
+  for (size_t i = 0; i < size(); i++) {
+    data_[i] ^= key[i % key.size()];
+  }
+}
+
+vector<bytevector> bytevector::split_into_blocks(size_t blocksize) const
+{
+  vector<bytevector> output;
+
+  for (size_t index = 0; index < size(); index += blocksize) {
+    auto it = cbegin() + index;
+    bytevector bv;
+    size_t count = 0;
+    while (count < blocksize && it != cend()) {
+      bv.push_back(*it);
+      count++;
+      it++;
+    }
+    output.push_back(bv);
+  }
+  return output;
+}
+
+// ===================================
 
 array<double, 27> letter_frequencies(bytevector b) {
   double total = 0;
@@ -236,21 +364,8 @@ array<double, 27> letter_frequencies(bytevector b) {
   return counts;
 }
 
-bytevector repeating_key_xor(bytevector text, string key) {
-  bytevector mask;
-  unsigned count = 0;
-  while (count < text.size()) {
-    for (byte c : key) {
-      if (count == text.size()) break;
-      mask.push_back(c);
-      count++;
-    }
-  }
-  return text ^ mask;
-}
-
-string solve_repeating_key_xor(bytevector ciphertext, unsigned key_size) {
-  vector<bytevector> blocks = split_into_blocks(ciphertext, key_size);
+string solve_repeating_key_xor(bytevector ciphertext, size_t key_size) {
+  vector<bytevector> blocks = ciphertext.split_into_blocks(key_size);
   if (blocks.back().size() < key_size) {
     blocks.resize(blocks.size() - 1);
   }
@@ -260,7 +375,7 @@ string solve_repeating_key_xor(bytevector ciphertext, unsigned key_size) {
   for (bytevector bv : by_index) {
     char best_key = 'a';
     double best_error = -1;
-    for (unsigned c = 0; c < 255; c++) {
+    for (size_t c = 0; c < 255; c++) {
       bytevector mask(bv.size(), c);
       bytevector decrypted = bv ^ mask;
       auto frequencies = letter_frequencies(decrypted);
@@ -301,297 +416,12 @@ double squared_error(array<double, 27> freq) {
   return error;
 }
 
-vector<bytevector> split_into_blocks(bytevector input, unsigned blocksize) {
-  vector<bytevector> output;
-
-  for (unsigned index = 0; index < input.size(); index += blocksize) {
-    auto it = input.begin() + index;
-    bytevector bv;
-    unsigned count = 0;
-    while (count < blocksize && it != input.end()) {
-      bv.push_back(*it);
-      count++;
-      it++;
-    }
-    output.push_back(bv);
-  }
-  return output;
-}
-
 vector<bytevector> transpose(vector<bytevector> input) {
   vector<bytevector> output(input[0].size());
   for (bytevector bv : input) {
-    for (unsigned i = 1; i < bv.size(); i++) {
+    for (size_t i = 1; i < bv.size(); i++) {
       output[i].push_back(bv[i]);
     }
   }
   return output;
 }
-
-bytevector pad_bytevector(bytevector bv, unsigned int length) {
-  if (length < bv.size()) {
-    throw std::invalid_argument(
-        "PKCS7 padding length must be longer than bytevector length");
-  }
-  if ((length - bv.size()) > 256) {
-    throw std::invalid_argument("PKCS7 cannot pad more than 256 bytes");
-  }
-
-  bytevector output = bv;
-  output.resize(length, length - bv.size());
-  return output;
-}
-
-bytevector pad_to_block(bytevector bv, unsigned int blocksize) {
-  int size = bv.size();
-  return pad_bytevector(bv, size + (blocksize - (size % blocksize)));
-}
-
-bool check_padding(bytevector bv) {
-  unsigned len = bv.size();
-  for (unsigned i = 1; i <= 256 && i <= len; i++) {
-    if (i > 1 && bv[len - i] != bv[len - i + 1]) {
-      return false;
-    }
-    if (bv[len - i] == i) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bytevector strip_padding(bytevector bv) {
-  unsigned len = bv.size();
-  for (unsigned i = 1; i <= 256 && i <= len; i++) {
-    if (i > 1 && bv[len - i] != bv[len - i + 1]) {
-      throw std::invalid_argument("Bad padding");
-    }
-    if (bv[len - i] == i) {
-      bytevector res = bv;
-      res.resize(len - i);
-      return res;
-    }
-  }
-  throw std::invalid_argument("Bad padding");
-}
-
-void crypto_init(void) {
-  ERR_load_crypto_strings();
-  OpenSSL_add_all_algorithms();
-  OPENSSL_config(NULL);
-}
-
-void crypto_cleanup(void) {
-  EVP_cleanup();
-  CRYPTO_cleanup_all_ex_data();
-  ERR_free_strings();
-}
-
-void handleErrors(void) {
-  ERR_print_errors_fp(stderr);
-}
-
-array<byte, 16> random_key(void) {
-  std::uniform_int_distribution<> dis(32, 126);
-
-  array<byte, 16> key;
-  for (int i = 0; i < 16; i++) {
-    key[i] = dis(gen);
-  }
-  return key;
-}
-
-bytevector random_string(unsigned length) {
-  std::uniform_int_distribution<> random_len(0, 256);
-  if (length == 0) length = random_len(gen);
-
-  std::uniform_int_distribution<> dis(32, 126);
-  bytevector s;
-  for (unsigned i = 0; i < length; i++) {
-    s.push_back(dis(gen));
-  }
-  return s;
-}
-
-bytevector mt19937_token(unsigned length, uint32_t seed) {
-  bytevector output;
-  MT19937 m(seed);
-  for (unsigned i = 0; i < length; i+=4) {
-    output += int_to_bytevector(m()); 
-  }
-  output.resize(length);
-  return output;
-}
-
-bytevector encrypt_ecb(bytevector data, byte *key, bool pad) {
-  byte ciphertext[data.size() + 16];
-  byte plaintext[data.size()];
-  int i = 0;
-  for (byte b : data) {
-    plaintext[i++] = b;
-  }
-
-  int len;
-  int ciphertext_len;
-  EVP_CIPHER_CTX *ctx;
-
-  /* Create and initialise the context */
-  if (!(ctx = EVP_CIPHER_CTX_new())) handleErrors();
-
-  /* Initialise the encryption operation. IMPORTANT - ensure you use a key
-   * and IV size appropriate for your cipher
-   * In this example we are using 256 bit AES (i.e. a 256 bit key). The
-   * IV size for *most* modes is the same as the block size. For AES this
-   * is 128 bits */
-  if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_128_ecb(), NULL, key, NULL))
-    handleErrors();
-  if (!pad) EVP_CIPHER_CTX_set_padding(ctx, 0);
-
-  /* Provide the message to be encrypted, and obtain the ciphertext output.
-   * EVP_EncryptUpdate can be called multiple times if necessary
-   */
-  if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, data.size()))
-    handleErrors();
-  ciphertext_len = len;
-
-  /* Finalise the encryption. Further ciphertext bytes may be written at
-   * this stage.
-   */
-  if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) handleErrors();
-  ciphertext_len += len;
-
-  /* Clean up */
-  EVP_CIPHER_CTX_free(ctx);
-
-  bytevector output;
-  for (int i = 0; i < ciphertext_len; i++) {
-    output.push_back(ciphertext[i]);
-  }
-  return output;
-}
-
-bytevector decrypt_ecb(bytevector data, byte *key, bool pad) {
-  byte ciphertext[data.size()];
-  byte plaintext[data.size()];
-  int i = 0;
-  for (byte b : data) {
-    ciphertext[i++] = b;
-  }
-
-  int len;
-  int plaintext_len;
-  EVP_CIPHER_CTX *ctx;
-
-  /* Create and initialise the context */
-  if (!(ctx = EVP_CIPHER_CTX_new())) handleErrors();
-
-  /* Initialise the decryption operation. IMPORTANT - ensure you use a key
-   * and IV size appropriate for your cipher
-   * In this example we are using 256 bit AES (i.e. a 256 bit key). The
-   * IV size for *most* modes is the same as the block size. For AES this
-   * is 128 bits */
-  if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_128_ecb(), NULL, key, NULL))
-    handleErrors();
-  if (!pad) EVP_CIPHER_CTX_set_padding(ctx, 0);
-
-  /* Provide the message to be decrypted, and obtain the plaintext output.
-   * EVP_DecryptUpdate can be called multiple times if necessary
-   */
-  if (1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, data.size()))
-    handleErrors();
-  plaintext_len = len;
-
-  /* Finalise the decryption. Further plaintext bytes may be written at
-   * this stage.
-   */
-  if (1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len)) handleErrors();
-  plaintext_len += len;
-
-  /* Clean up */
-  EVP_CIPHER_CTX_free(ctx);
-
-  bytevector output;
-  for (int i = 0; i < plaintext_len; i++) {
-    output.push_back(plaintext[i]);
-  }
-
-  return output;
-}
-
-bytevector encrypt_cbc(bytevector plaintext, byte *key, byte *iv) {
-  if (!check_padding(plaintext)) {
-    throw std::invalid_argument("input to encrypt_cbc must be padded to 16 bytes");
-  }
-  vector<bytevector> blocks = split_into_blocks(plaintext, 16);
-  bytevector ciphertext;
-  bytevector prev_block(iv, iv + 16);
-
-  for (const bytevector &block : blocks) {
-    bytevector cipher_block = encrypt_ecb(block ^ prev_block, key, false);
-    ciphertext += cipher_block;
-    prev_block = cipher_block;
-  }
-  return ciphertext;
-}
-
-bytevector decrypt_cbc(bytevector ciphertext, byte *key, byte *iv) {
-  vector<bytevector> blocks = split_into_blocks(ciphertext, 16);
-  bytevector plaintext;
-  bytevector prev_block(iv, iv + 16);
-
-  for (const bytevector &block : blocks) {
-    bytevector plain_block = decrypt_ecb(block, key, false);
-    plaintext += (plain_block ^ prev_block);
-    prev_block = block;
-  }
-  return plaintext;
-}
-
-bytevector do_ctr(bytevector input, byte *key, uint64_t nonceInt) {
-  bytevector nonce = int_to_bytevector(nonceInt);
-  uint64_t block_counter = 0;
-  vector<bytevector> blocks = split_into_blocks(input, 16);
-
-  bytevector output;
-  for (const bytevector &block : blocks) {
-    bytevector key_block = nonce + int_to_bytevector(block_counter);
-    bytevector key_stream =
-      encrypt_ecb(key_block, key, false);
-    key_stream.resize(block.size());
-    output += key_stream ^ block;
-    block_counter++;
-  }
-  return output;
-}
-
-bytevector encrypt_ctr(bytevector plaintext, byte *key, uint64_t nonce)
-{
-  return do_ctr(plaintext, key, nonce);
-}
-
-bytevector decrypt_ctr(bytevector ciphertext, byte *key, uint64_t nonce)
-{
-  return do_ctr(ciphertext, key, nonce);
-}
-
-bytevector do_mt_stream(bytevector input, uint16_t key) {
-  MT19937 m(static_cast<uint32_t>(key));
-  bytevector output;
-  vector<bytevector> blocks = split_into_blocks(input, 4);
-  for (const bytevector &block : blocks) {
-    bytevector ks = int_to_bytevector(m());
-    ks.resize(block.size());
-    output += block ^ ks; 
-  }
-  return output;
-}
-
-bytevector encrypt_mt_stream(bytevector plaintext, uint16_t key) {
-  return do_mt_stream(plaintext, key);
-}
-
-bytevector decrypt_mt_stream(bytevector ciphertext, uint16_t key) {
-  return do_mt_stream(ciphertext, key);
-}
-
-

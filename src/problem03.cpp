@@ -1,15 +1,12 @@
 #include <iostream>
-#include <array>
 #include <string>
 
 #include "bytevector.h"
 
-using std::array;
-using std::string;
-
 int main() {
-  bytevector input = hex_to_bytevector(
-     "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736");
+  bytevector input(
+     "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736",
+     bytevector::HEX);
 
   bytevector best_output;
   double best_error = -1;
@@ -23,6 +20,6 @@ int main() {
       best_error = error;
     }
   }
-  std::cout << bytevector_to_string(best_output) << std::endl;
+  std::cout << best_output << std::endl;
   return 0;
 }
