@@ -1,13 +1,11 @@
 #include <array>
 #include <iostream>
 #include <string>
-#include <unordered_map>
 #include <vector>
 #include <type_traits>
 
 typedef unsigned char byte;
 typedef std::vector<byte> bytevector;
-typedef std::unordered_map<std::string, std::string> cookie;
 
 std::ostream& operator<<(std::ostream& os, bytevector b);
 
@@ -71,8 +69,6 @@ bytevector decrypt_ctr(bytevector ciphertext, byte *key, uint64_t nonce);
 
 bytevector encrypt_mt_stream(bytevector plaintext, uint16_t key);
 bytevector decrypt_mt_stream(bytevector ciphertext, uint16_t key);
-
-cookie parse_cookie(std::string cookie_str, char separator);
 
 uint32_t untemper(uint32_t val);
 
