@@ -102,7 +102,7 @@ public:
   bool check_padding() const;
   void strip_padding();
 
-  void repeating_key_xor(std::string key);
+  void repeating_key_xor(bytevector key);
   std::vector<bytevector> split_into_blocks(size_t blocksize) const;
 
 private:
@@ -116,6 +116,6 @@ std::ostream& operator<<(std::ostream& os, bytevector b);
 std::vector<bytevector> transpose(std::vector<bytevector> input);
 
 std::array<double, 27> letter_frequencies(bytevector b);
-std::string solve_repeating_key_xor(bytevector ciphertext, size_t key_size);
+bytevector solve_repeating_key_xor(bytevector ciphertext, size_t key_size);
 int hamming_distance(bytevector a, bytevector b);
 double squared_error(std::array<double, 27> freq);

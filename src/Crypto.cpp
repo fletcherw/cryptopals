@@ -236,15 +236,15 @@ bytevector Crypto::decrypt_mt(bytevector ciphertext, uint16_t key)
   return do_mt(ciphertext, key);
 }
 
-bytevector random_key(size_t length)
+bytevector random_bytevector(size_t length)
 {
   std::uniform_int_distribution<> dis(0, 255);
 
-  bytevector key;
+  bytevector bv;
   for (size_t i = 0; i < length; i++) {
-    key += dis(gen);
+    bv += dis(gen);
   }
-  return key;
+  return bv;
 }
 
 bytevector random_string(size_t min, size_t max)

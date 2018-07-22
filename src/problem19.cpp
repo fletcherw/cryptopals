@@ -14,7 +14,7 @@ using std::endl;
 
 namespace {
 
-bytevector key = random_key();
+bytevector key = random_bytevector();
 Crypto cr;
 
 }

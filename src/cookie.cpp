@@ -26,8 +26,11 @@ cookie parse_cookie(string cookie_str, char separator) {
 
 std::ostream& operator<<(std::ostream& os, cookie c)
 {
+  unsigned count = 0;
   for (const auto &pair : c) {
-    std::cout << pair.first << " : " << pair.second << std::endl;
+    count++;
+    std::cout << pair.first << " : " << pair.second;
+    if (count != c.size()) std::cout << std::endl;
   }
   return os;
 }

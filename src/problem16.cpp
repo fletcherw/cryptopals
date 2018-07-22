@@ -12,9 +12,9 @@ using std::cout;
 using std::endl;
 
 namespace {
-bytevector key = random_key();
-bytevector iv = random_key();
-Crypto cr;
+  bytevector key;
+  bytevector iv;
+  Crypto cr;
 }
 
 bytevector encrypt(bytevector userdata) {
@@ -39,6 +39,8 @@ bytevector encrypt(bytevector userdata) {
 }
 
 int main() {
+  key = random_bytevector();
+  iv = random_bytevector();
 
   bytevector input("QQQQQQQQQQQQQQQQ:admin<true", bytevector::PLAIN);
   bytevector ciphertext = encrypt(input);
@@ -49,11 +51,14 @@ int main() {
   bytevector plaintext = cr.decrypt_cbc(ciphertext, key, iv);
   plaintext.strip_padding();
   cookie c = parse_cookie(plaintext.to_string(bytevector::PLAIN), ';');
+  bool is_admin = false;
   for (const auto &member : c) {
     if (member.first == "admin") {
-      cout << "Admin: " << member.second << endl;
+      is_admin = true;
+      break;
     }
   }
 
+  cout << "Is User Admin: " << (is_admin ? "true" : "false") << endl;
   return 0;
 }

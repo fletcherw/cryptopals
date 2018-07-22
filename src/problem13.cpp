@@ -12,7 +12,7 @@ using std::cout;
 using std::endl;
 
 namespace {
-  bytevector key = random_key(16);
+  bytevector key = random_bytevector();
   Crypto cr;
 }
 
@@ -56,6 +56,6 @@ int main()
   exploit.insert(exploit.end(), role.begin() + 16, role.begin() + 32);
 
   cookie exploit_cookie = decrypt(exploit);
-  cout << exploit_cookie;
+  cout << exploit_cookie << endl;
   return 0;
 }

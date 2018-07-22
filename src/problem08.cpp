@@ -26,7 +26,8 @@ int main() {
 
     for (string s : chunks) {
       if (strings.count(s) > 1) {
-        std::cout << row << std::endl;
+        std::cout << "Line " << row
+                  << " in the file was encrypted with ECB" << std::endl;
         break;
       }
     }

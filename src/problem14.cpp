@@ -15,9 +15,9 @@ using std::endl;
 
 namespace {
 
-Crypto cr;
-bytevector key = random_key();
-bytevector random_prefix = random_string(0, 256);
+  Crypto cr;
+  bytevector key;
+  bytevector random_prefix;
 
 }
 
@@ -30,6 +30,8 @@ bytevector encrypt(bytevector plaintext) {
 }
 
 int main() {
+  key = random_bytevector();
+  random_prefix = random_string(0, 256);
   int block_size;
   unsigned start_len = encrypt(bytevector()).size();
   for (int i = 1; i < 128; i++) {
@@ -83,6 +85,6 @@ int main() {
     if (b == 126) break;
   }
 
-  cout << "Decrypted: " << decrypted << endl;
+  cout << "Decrypted: " << decrypted.to_string(bytevector::ASCII) << endl;
   return 0;
 }

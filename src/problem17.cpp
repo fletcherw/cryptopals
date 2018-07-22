@@ -14,14 +14,12 @@ using std::cout;
 using std::endl;
 
 namespace {
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  bytevector key;
+  bytevector iv;
 
-std::random_device rd;
-std::mt19937 gen(rd());
-
-bytevector key = random_key();
-bytevector iv = random_key();
-Crypto cr;
-
+  Crypto cr;
 }
 
 vector<string> strings =
@@ -41,6 +39,7 @@ bytevector get_cipher_text() {
   string input = strings[dis(gen)];
   bytevector plaintext(input, bytevector::BASE64);
   plaintext.pad_to_block(16);
+
   bytevector ciphertext = cr.encrypt_cbc(plaintext, key, iv);
   return ciphertext;
 }
@@ -51,15 +50,19 @@ bool decrypt(bytevector ciphertext) {
 }
 
 int main() {
+  key = random_bytevector();
+  iv = random_bytevector();
   cout << "Key: " << key << endl;
   cout << "IV: "  << iv  << endl;
 
   bytevector ciphertext = get_cipher_text();
-  cout << ciphertext << endl;
+  cout << "Ciphertext: " << ciphertext << endl << endl;
   vector<bytevector> blocks = ciphertext.split_into_blocks(16);
   bytevector prev = iv;
   bytevector plaintext;
-  for (const bytevector& block : blocks) {
+  for (unsigned block_index = 0; block_index < blocks.size(); block_index++) {
+    cout << "Decrypting block " << block_index << ": " << endl;
+    bytevector& block = blocks[block_index];
     bytevector plain_block(16, '_');
     bytevector corrupter(16, '\0');
     for (int i = 15; i >= 0; i--) {
@@ -82,7 +85,8 @@ int main() {
           }
           plain_block[i] = guess ^ prev[i];
           std::cout << std::setw(2) << i << std::setw(0)
-                    << " " << plain_block << " " << guess << endl;
+                    << " " << plain_block.to_string(bytevector::ASCII)
+                    << " " << guess << endl;
           corrupter[i] ^= guess ^ (16 - i);
           break;
         }
@@ -94,6 +98,6 @@ int main() {
   }
 
   plaintext.strip_padding();
-  cout << plaintext << endl;
+  cout << "Decrypted text: " << plaintext.to_string(bytevector::ASCII) << endl;
   return 0;
 }

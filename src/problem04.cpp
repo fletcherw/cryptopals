@@ -23,6 +23,6 @@ int main() {
     }
   }
 
-  std::cout << best_output << std::endl;
+  std::cout << best_output.to_string(bytevector::ASCII) << std::endl;
   return 0;
 }

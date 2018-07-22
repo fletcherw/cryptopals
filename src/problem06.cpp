@@ -41,12 +41,12 @@ int main() {
       min_size = key_size;
     }
   }
-  cout << "key_size: " << min_size << endl;
+  cout << "Key Size: " << min_size << endl;
 
-  string key = solve_repeating_key_xor(data, min_size);
-  cout << "key: " << key << endl;
+  bytevector key = solve_repeating_key_xor(data, min_size);
+  cout << "Key: " << key.to_string(bytevector::ASCII) << endl;
 
   data.repeating_key_xor(key);
-  cout << data << endl;
+  cout << "Plaintext: " << endl << data.to_string(bytevector::ASCII) << endl;
   return 0;
 }

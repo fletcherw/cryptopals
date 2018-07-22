@@ -78,8 +78,8 @@ bytevector::bytevector()
 }
 
 bytevector::bytevector(size_t count, byte value)
+  : data_(count, value)
 {
-  resize(count, value);
 }
 
 bytevector::bytevector(const string &s, bv_mode mode)
@@ -96,7 +96,7 @@ bytevector::bytevector(const string &s, bv_mode mode)
       byte b2 = hex_digit_to_bits(d2);
       data_.push_back(b1 << 4 | b2);
     }
-  } 
+  }
   else if (mode == bytevector::BASE64) {
     if (s.size() % 4 != 0) {
       throw invalid_argument(
@@ -153,7 +153,7 @@ bytevector bytevector::operator +=(char c)
 }
 
 std::ostream& operator<<(std::ostream& os, bytevector b) {
-  os << b.to_string(bytevector::ASCII); 
+  os << b.to_string(bytevector::HEX);
   return os;
 }
 
@@ -171,7 +171,7 @@ string bytevector::to_string(bv_mode mode) const
       out += equiv;
       if (it + 1 != data_.end()) out += " ";
     }
-  } 
+  }
   else if (mode == bytevector::BASE64) {
     for (auto it = data_.begin(); it != data_.end(); it++) {
       size_t padding = 0;
@@ -194,11 +194,11 @@ string bytevector::to_string(bv_mode mode) const
   else if (mode == bytevector::ASCII) {
     for (byte c : data_) {
       if ((32 <= c && c <= 126) ||
-           c == '\n' || c == '\t' || 
+           c == '\n' || c == '\t' ||
            c == '\r' || c == '\v' ||
            c == '\f')
       {
-        out += c; 
+        out += c;
       }
       else {
         out += '_';
@@ -316,7 +316,7 @@ void bytevector::strip_padding()
   throw invalid_argument("strip_padding: bad padding");
 }
 
-void bytevector::repeating_key_xor(string key)
+void bytevector::repeating_key_xor(bytevector key)
 {
   for (size_t i = 0; i < size(); i++) {
     data_[i] ^= key[i % key.size()];
@@ -364,18 +364,19 @@ array<double, 27> letter_frequencies(bytevector b) {
   return counts;
 }
 
-string solve_repeating_key_xor(bytevector ciphertext, size_t key_size) {
+bytevector solve_repeating_key_xor(bytevector ciphertext, size_t key_size) {
   vector<bytevector> blocks = ciphertext.split_into_blocks(key_size);
   if (blocks.back().size() < key_size) {
     blocks.resize(blocks.size() - 1);
   }
 
   vector<bytevector> by_index = transpose(blocks);
-  std::string key;
+  bytevector key;
   for (bytevector bv : by_index) {
     char best_key = 'a';
     double best_error = -1;
-    for (size_t c = 0; c < 255; c++) {
+    for (size_t i = 0; i < 255; i++) {
+      size_t c = 255 - i - 1;
       bytevector mask(bv.size(), c);
       bytevector decrypted = bv ^ mask;
       auto frequencies = letter_frequencies(decrypted);

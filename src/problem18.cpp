@@ -13,6 +13,7 @@ Crypto cr;
 int main() {
   bytevector plaintext = cr.decrypt_ctr(ciphertext, key, 0);
 
-  std::cout << plaintext << std::endl;
+  std::cout << "Plaintext: " << std::endl
+            << plaintext.to_string(bytevector::ASCII) << std::endl;
   return 0;
 }

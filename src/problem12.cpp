@@ -13,7 +13,7 @@ using std::cout;
 using std::endl;
 
 namespace {
-  bytevector key = random_key();
+  bytevector key = random_bytevector();
   Crypto cr;
 }
 
@@ -69,6 +69,6 @@ int main() {
     if (b == 126) break;
   }
 
-  cout << "Decrypted: " << decrypted << endl;
+  cout << "Decrypted: " << decrypted.to_string(bytevector::ASCII) << endl;
   return 0;
 }

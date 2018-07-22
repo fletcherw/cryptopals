@@ -26,6 +26,6 @@ private:
   unsigned instances_;
 };
 
-bytevector random_key(size_t length=16);
+bytevector random_bytevector(size_t length=16);
 bytevector random_string(size_t min, size_t max);
 bytevector mt19937_token(size_t length, uint32_t seed);

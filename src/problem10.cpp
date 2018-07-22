@@ -12,6 +12,7 @@ int main() {
   std::ifstream in_file("data/problem10.data");
   bytevector ciphertext(in_file);
   bytevector plaintext = cr.decrypt_cbc(ciphertext, key, iv);
-  std::cout << plaintext << std::endl;
+  std::cout << "Plaintext: " << std::endl
+            << plaintext.to_string(bytevector::ASCII) << std::endl;
   return 0;
 }

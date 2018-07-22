@@ -8,15 +8,16 @@ using std::endl;
 
 int main() {
   bytevector a("ICE ICE BABY\x04\x04\x04\x04", bytevector::PLAIN);
-  cout << a << endl;
+  cout << "Original: " << a << endl;
   a.strip_padding();
-  cout << a << endl;
+  cout << "Stripped: " << a << endl;
+  cout << endl;
 
   bytevector b("ICE ICE BABY\x05\x05\x05\x05", bytevector::PLAIN);
-  cout << b << endl;
+  cout << "Original: " << b << endl;
   try {
     b.strip_padding();
-    cout << b << endl;
+    cout << "Stripped: " << b << endl;
   } catch (std::invalid_argument &) {
     cout << "Padding is invalid" << endl;
   }

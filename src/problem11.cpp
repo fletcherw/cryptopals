@@ -13,7 +13,7 @@ using std::endl;
 static Crypto cr;
 
 bytevector random_encrypt(bytevector data) {
-  bytevector key = random_key(16);
+  bytevector key = random_bytevector();
 
   bytevector plaintext;
   plaintext += random_string(5, 10);
@@ -26,7 +26,7 @@ bytevector random_encrypt(bytevector data) {
     ciphertext = cr.encrypt_ecb(plaintext, key, false);
     cout << "Real:  ECB" << endl;
   } else {
-    bytevector iv = random_key(16);
+    bytevector iv = random_bytevector();
     ciphertext = cr.encrypt_cbc(plaintext, key, iv);
     cout << "Real:  CBC" << endl;
   }

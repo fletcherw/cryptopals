@@ -12,15 +12,20 @@ using std::vector;
 using std::cout;
 using std::endl;
 
-bytevector key = random_key();
+bytevector key;
 
 int main() {
+  key = random_bytevector();
+  Crypto cr;
+
   unsigned min_length = static_cast<unsigned>(-1);
   vector<bytevector> ciphertexts;
   std::ifstream infile("data/problem20.data");
   std::string line;
   while (std::getline(infile, line)) {
-    ciphertexts.push_back(bytevector(line, bytevector::BASE64));
+    bytevector plaintext(line, bytevector::BASE64);
+    cout << plaintext.to_string(bytevector::ASCII) << endl;
+    ciphertexts.push_back(cr.encrypt_ctr(plaintext, key, 0));
     if (ciphertexts.back().size() < min_length)
       min_length = ciphertexts.back().size();
   }
@@ -31,11 +36,11 @@ int main() {
     mega_ct += ct;
   }
 
-  string key = solve_repeating_key_xor(mega_ct, min_length);
-  cout << "Key: " << key << endl;
-  bytevector bvKey(key, bytevector::PLAIN);
+  bytevector xorKey = solve_repeating_key_xor(mega_ct, min_length);
+  cout << "Key: " << xorKey << endl << endl;
+
   for (const bytevector &ct : ciphertexts) {
-    cout << (ct ^ bvKey) << endl;
+    cout << (ct ^ xorKey).to_string(bytevector::ASCII) << endl;
   }
 
   return 0;
